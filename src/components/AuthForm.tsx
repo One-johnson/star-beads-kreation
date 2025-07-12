@@ -38,8 +38,8 @@ export function AuthForm() {
       setName("");
       setPassword("");
       setContact("");
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Something went wrong");
     } finally {
       setPending(false);
     }
@@ -57,8 +57,8 @@ export function AuthForm() {
         await logoutAction({ sessionToken });
       }
       setSessionToken(null);
-    } catch (err: any) {
-      setError(err.message || "Logout failed");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Logout failed");
     } finally {
       setPending(false);
     }

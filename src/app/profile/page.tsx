@@ -36,8 +36,8 @@ export default function ProfilePage() {
       await updateName({ userId: user.userId, name: editName });
       await updateContact({ userId: user.userId, contact: editContact });
       setSuccess("Profile updated successfully!");
-    } catch (err: any) {
-      setError(err.message || "Failed to update profile");
+    } catch (err: unknown) {
+      setError((err as Error).message || "Failed to update profile");
     } finally {
       setEditing(false);
     }

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { WishlistButton } from "./WishlistButton";
 import { Star, ShoppingCart, Heart } from "lucide-react";
+import Image from "next/image";
 
 export type ProductCardProps = {
   productId: Id<"products">;
@@ -89,7 +90,7 @@ export function ProductCard({
 
       {/* Product Image */}
       <div className="relative mb-4">
-        <img src={imageUrl} alt={name} className="w-full h-48 object-cover rounded" />
+        <Image src={imageUrl} alt={name} width={400} height={192} className="w-full h-48 object-cover rounded" />
         {stock !== undefined && stock <= 5 && stock > 0 && (
           <Badge variant="destructive" className="absolute top-2 left-2">
             Only {stock} left!
