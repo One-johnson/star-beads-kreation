@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 
 export default function CategoriesPage() {
   const categories = useQuery(api.categories.getCategories);
@@ -49,9 +50,11 @@ export default function CategoriesPage() {
             <CardContent>
               {category.imageUrl && (
                 <div className="mb-4">
-                  <img
+                  <Image
                     src={category.imageUrl}
                     alt={category.name}
+                    width={400}
+                    height={192}
                     className="w-full h-48 object-cover rounded"
                   />
                 </div>
