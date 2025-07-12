@@ -6,9 +6,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Package, Truck, Home } from "lucide-react";
+import { CheckCircle, Package, Truck } from "lucide-react";
 import Link from "next/link";
 import { Id } from "@/../convex/_generated/dataModel";
+import Image from "next/image";
 
 interface OrderPageProps {
   params: Promise<{
@@ -55,7 +56,7 @@ export default function OrderPage({ params }: OrderPageProps) {
     return (
       <div className="max-w-4xl mx-auto p-8">
         <div className="text-center text-muted-foreground">
-          You don't have permission to view this order.
+          You don&apos;t have permission to view this order.
         </div>
       </div>
     );
@@ -90,7 +91,7 @@ export default function OrderPage({ params }: OrderPageProps) {
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h1 className="text-3xl font-bold mb-2">Order Confirmed!</h1>
         <p className="text-muted-foreground">
-          Thank you for your order. We'll send you updates as your order progresses.
+          Thank you for your order. We&apos;ll send you updates as your order progresses.
         </p>
       </div>
 
@@ -152,7 +153,7 @@ export default function OrderPage({ params }: OrderPageProps) {
           <div className="space-y-4">
             {order.items.map((item: any) => (
               <div key={item.productId} className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0">
-                <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded" />
+                <Image src={item.imageUrl} alt={item.name} width={64} height={64} className="w-16 h-16 object-cover rounded" />
                 <div className="flex-1">
                   <div className="font-medium text-lg">{item.name}</div>
                   <div className="text-sm text-muted-foreground">Qty: {item.quantity}</div>

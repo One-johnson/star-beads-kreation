@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Package, Truck, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export default function OrdersPage() {
   const { user } = useAuth();
@@ -92,7 +93,7 @@ export default function OrdersPage() {
                     <div className="text-right">
                       <div className="font-bold text-lg">${order.total.toFixed(2)}</div>
                       <div className="text-xs text-muted-foreground">
-                        {order.items.length} item{order.items.length !== 1 ? 's' : ''}
+                        {order.items.length} item{order.items.length !== 1 ? "s" : ""}
                       </div>
                     </div>
                   </div>
@@ -114,7 +115,7 @@ export default function OrdersPage() {
                     <div className="space-y-2">
                       {order.items.slice(0, 3).map((item: any, idx: number) => (
                         <div key={idx} className="flex items-center gap-2">
-                          <img src={item.imageUrl} alt={item.name} className="w-8 h-8 object-cover rounded" />
+                          <Image src={item.imageUrl} alt={item.name} width={32} height={32} className="w-8 h-8 object-cover rounded" />
                           <div className="flex-1 min-w-0">
                             <div className="text-sm font-medium truncate">{item.name}</div>
                             <div className="text-xs text-muted-foreground">Qty: {item.quantity}</div>

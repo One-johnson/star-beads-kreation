@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { Id } from "@/../convex/_generated/dataModel";
+import Image from "next/image";
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -55,7 +56,7 @@ export default function CartPage() {
             <div className="flex flex-col gap-6 mb-6">
               {cart.items?.map((item: { productId: Id<"products">; name: string; price: number; quantity: number; imageUrl: string }) => (
                 <div key={item.productId} className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0">
-                  <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded" />
+                  <Image src={item.imageUrl} alt={item.name} width={64} height={64} className="w-16 h-16 object-cover rounded" />
                   <div className="flex-1">
                     <div className="font-medium text-lg">{item.name}</div>
                     <div className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</div>

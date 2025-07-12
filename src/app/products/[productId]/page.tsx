@@ -15,6 +15,7 @@ import { useMutation } from "convex/react";
 import { toast } from "sonner";
 import Link from "next/link";
 import { Id } from "@/../convex/_generated/dataModel";
+import Image from "next/image";
 
 interface ProductPageProps {
   params: Promise<{
@@ -99,11 +100,7 @@ export default function ProductPage({ params }: ProductPageProps) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
         {/* Product Image */}
         <div className="relative">
-          <img 
-            src={product.imageUrl} 
-            alt={product.name} 
-            className="w-full h-96 object-cover rounded-lg"
-          />
+          <Image src={product.imageUrl} alt={product.name} width={400} height={400} className="w-full h-auto object-cover rounded" />
           <div className="absolute top-4 right-4">
             <WishlistButton productId={product._id} />
           </div>

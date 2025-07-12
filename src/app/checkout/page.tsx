@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import Image from "next/image";
 
 interface ShippingInfo {
   fullName: string;
@@ -229,7 +230,7 @@ export default function CheckoutPage() {
                   {cart.items.map((item) => (
                     <div key={item.productId} className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
-                        <img src={item.imageUrl} alt={item.name} className="w-12 h-12 object-cover rounded" />
+                        <Image src={item.imageUrl} alt={item.name} width={48} height={48} className="w-12 h-12 object-cover rounded" />
                         <div>
                           <div className="font-medium">{item.name}</div>
                           <div className="text-sm text-muted-foreground">Qty: {item.quantity}</div>

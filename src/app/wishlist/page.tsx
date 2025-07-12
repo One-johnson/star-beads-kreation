@@ -5,15 +5,13 @@ import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProductGrid } from "@/components/ProductGrid";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
 
 export default function WishlistPage() {
   const { user } = useAuth();
-  const wishlistItems = useQuery(api.wishlist.getUserWishlist, {
-    userId: user?.userId || "placeholder" as any,
-  });
+  const wishlistItems = useQuery(api.wishlist.getUserWishlist, user?.userId ? { userId: user.userId } : "skip");
 
   if (!user) {
     return (
