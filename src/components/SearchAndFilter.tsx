@@ -165,7 +165,7 @@ export function SearchAndFilter({ onSearch, className }: SearchAndFilterProps) {
                 <label className="text-sm font-medium mb-2 block">Sort By</label>
                 <Select
                   value={filters.sortBy}
-                  onValueChange={(value: any) => setFilters({ ...filters, sortBy: value })}
+                  onValueChange={(value: string) => setFilters({ ...filters, sortBy: value as "price" | "name" | "rating" | "createdAt" })}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -182,7 +182,7 @@ export function SearchAndFilter({ onSearch, className }: SearchAndFilterProps) {
                 <label className="text-sm font-medium mb-2 block">Order</label>
                 <Select
                   value={filters.sortOrder}
-                  onValueChange={(value: any) => setFilters({ ...filters, sortOrder: value })}
+                    onValueChange={(value: string) => setFilters({ ...filters, sortOrder: value as "asc" | "desc" })}
                 >
                   <SelectTrigger>
                     <SelectValue />

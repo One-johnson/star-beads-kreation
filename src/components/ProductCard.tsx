@@ -7,7 +7,7 @@ import { Id } from "@/../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { WishlistButton } from "./WishlistButton";
-import { Star, ShoppingCart, Heart } from "lucide-react";
+import { Star, ShoppingCart } from "lucide-react";
 import Image from "next/image";
 
 export type ProductCardProps = {
