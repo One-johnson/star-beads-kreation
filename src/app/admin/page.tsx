@@ -7,7 +7,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Users, Package, ShoppingCart, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Package, ShoppingCart, DollarSign } from "lucide-react";
 import Link from "next/link";
 
 export default function AdminPage() {
@@ -27,7 +27,7 @@ export default function AdminPage() {
     );
   }
 
-  const totalRevenue = allOrders?.reduce((sum: number, order: any) => sum + order.total, 0) || 0;
+  const totalRevenue = allOrders?.reduce((sum: number, order: { total: number }) => sum + order.total, 0) || 0;
   const totalOrders = allOrders?.length || 0;
   const totalProducts = allProducts?.length || 0;
   const totalUsers = allUsers?.length || 0;
@@ -40,7 +40,7 @@ export default function AdminPage() {
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
         <p className="text-muted-foreground">
-          Welcome back, {user.name}! Here's an overview of your store.
+          Welcome back, {user.name}! Here&apos;s an overview of your store.
         </p>
       </div>
 
@@ -110,7 +110,7 @@ export default function AdminPage() {
               {recentOrders.length === 0 ? (
                 <p className="text-muted-foreground">No orders yet.</p>
               ) : (
-                recentOrders.map((order: any) => (
+                recentOrders.map((order: { _id: string; createdAt: number; total: number; status: string }) => (
                   <div key={order._id} className="flex items-center justify-between p-3 border rounded">
                     <div>
                       <div className="font-medium">Order #{order._id.slice(-8)}</div>

@@ -1,10 +1,11 @@
 "use client";
-import React, { useState } from "react";
+import React from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import { Id } from "@/../convex/_generated/dataModel";
 
 export default function CartPage() {
   const { user } = useAuth();
@@ -22,12 +23,12 @@ export default function CartPage() {
     return <div className="text-center text-muted-foreground">You must be logged in to view your cart.</div>;
   }
 
-  const handleQuantityChange = async (productId: any, quantity: number) => {
+  const handleQuantityChange = async (productId: Id<"products">, quantity: number) => {
     if (quantity < 1) return;
     await updateCartItem({ userId: user.userId, productId, quantity });
   };
 
-  const handleRemove = async (productId: any) => {
+  const handleRemove = async (productId: Id<"products">) => {
     await removeCartItem({ userId: user.userId, productId });
   };
 
@@ -39,7 +40,7 @@ export default function CartPage() {
     router.push("/checkout");
   };
 
-  const total = cart?.items?.reduce((sum: number, item: any) => sum + item.price * item.quantity, 0) || 0;
+  const total = cart?.items?.reduce((sum: number, item: { price: number; quantity: number }) => sum + item.price * item.quantity, 0) || 0;
 
   return (
     <main className="max-w-3xl mx-auto p-8">
@@ -52,7 +53,7 @@ export default function CartPage() {
         ) : (
           <>
             <div className="flex flex-col gap-6 mb-6">
-              {cart.items?.map((item: any) => (
+              {cart.items?.map((item: { productId: Id<"products">; name: string; price: number; quantity: number; imageUrl: string }) => (
                 <div key={item.productId} className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0">
                   <img src={item.imageUrl} alt={item.name} className="w-16 h-16 object-cover rounded" />
                   <div className="flex-1">
