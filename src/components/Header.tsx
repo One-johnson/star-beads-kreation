@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
-import { Heart } from "lucide-react";
+import { Heart, ShoppingCart } from "lucide-react";
 
 export function Header() {
   const { user, setSessionToken } = useAuth();
@@ -65,7 +65,7 @@ export function Header() {
           )}
           <Button asChild variant="outline" size="sm" className="relative">
             <Link href="/cart">
-              Cart
+              <ShoppingCart className="w-4 h-4" />
               {cartCount !== undefined && cartCount > 0 && (
                 <Badge 
                   variant="destructive" 
