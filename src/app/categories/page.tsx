@@ -115,14 +115,14 @@ export default function CategoriesPage() {
 
       {/* Search & Sort Bar */}
       <div className="flex flex-col md:flex-row gap-4 mb-8 items-center justify-between">
-        <div className="flex items-center gap-2 w-full md:w-1/2">
-          <Search className="w-5 h-5 text-muted-foreground" />
+        <div className="relative w-full md:w-1/2">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
             type="text"
             placeholder="Search categories..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full"
+            className="w-full pl-10"
           />
         </div>
         <div className="flex items-center gap-2">

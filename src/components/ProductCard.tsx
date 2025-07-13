@@ -90,7 +90,13 @@ export function ProductCard({
 
       {/* Product Image */}
       <div className="relative mb-4">
-        <Image src={imageUrl} alt={name} width={400} height={192} className="w-full h-48 object-cover rounded" />
+        <Image 
+          src={imageUrl} 
+          alt={name} 
+          width={400} 
+          height={192} 
+          className="w-full h-48 object-cover rounded transition-transform duration-300 group-hover:scale-105" 
+        />
         {stock !== undefined && stock <= 5 && stock > 0 && (
           <Badge variant="destructive" className="absolute top-2 left-2">
             Only {stock} left!
