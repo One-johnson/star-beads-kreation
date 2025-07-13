@@ -15,10 +15,9 @@ interface WishlistButtonProps {
 
 export function WishlistButton({ productId, className }: WishlistButtonProps) {
   const { user } = useAuth();
-  const isInWishlist = useQuery(api.wishlist.isInWishlist, {
-    userId: user?.userId || "placeholder" as Id<"users">,
-    productId,
-  });
+  const isInWishlist = useQuery(api.wishlist.isInWishlist, 
+    user ? { userId: user.userId, productId } : "skip"
+  );
   const addToWishlist = useMutation(api.wishlist.addToWishlist);
   const removeFromWishlist = useMutation(api.wishlist.removeFromWishlist);
 

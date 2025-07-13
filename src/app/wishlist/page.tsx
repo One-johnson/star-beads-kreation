@@ -5,6 +5,7 @@ import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { ProductGrid } from "@/components/ProductGrid";
+import { ProductGridSkeleton } from "@/components/ProductSkeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Heart, ShoppingBag } from "lucide-react";
 import Link from "next/link";
@@ -26,7 +27,13 @@ export default function WishlistPage() {
   if (wishlistItems === undefined) {
     return (
       <div className="max-w-4xl mx-auto p-8">
-        <div className="text-center">Loading wishlist...</div>
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">My Wishlist</h1>
+          <p className="text-muted-foreground">
+            Your saved products for later purchase
+          </p>
+        </div>
+        <ProductGridSkeleton count={6} />
       </div>
     );
   }
