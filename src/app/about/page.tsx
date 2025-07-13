@@ -105,8 +105,8 @@ export default function AboutPage() {
             <div>
               <h2 className="text-3xl font-bold mb-6">Our Mission</h2>
               <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
-                At Star Beads Kreation, we believe that jewelry is more than just adornment—it's a form of self-expression, 
-                a connection to culture, and a celebration of creativity. Our mission is to bring the world's most beautiful 
+                At Star Beads Kreation, we believe that jewelry is more than just adornment—it&apos;s a form of self-expression, 
+                a connection to culture, and a celebration of creativity. Our mission is to bring the world&apos;s most beautiful 
                 beads and finest craftsmanship to your fingertips.
               </p>
               <p className="text-lg text-muted-foreground mb-8 leading-relaxed">
@@ -277,8 +277,8 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Start Your Bead Journey?</h2>
           <p className="text-lg mb-8 opacity-90">
-            Whether you're a seasoned collector or just discovering the world of beads, 
-            we're here to help you find your perfect piece.
+            Whether you&apos;re a seasoned collector or just discovering the world of beads, 
+            we&apos;re here to help you find your perfect piece.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="secondary" asChild>

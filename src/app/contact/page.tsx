@@ -120,7 +120,7 @@ export default function ContactPage() {
             </h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Have questions about our traditional Ghanaian beads, need a custom design, or just want to say hello? 
-              We'd love to hear from you! Akwaaba (Welcome)!
+              We&apos;d love to hear from you! Akwaaba (Welcome)!
             </p>
           </div>
         </div>
@@ -182,7 +182,7 @@ export default function ContactPage() {
                       required
                       value={formData.subject}
                       onChange={handleInputChange}
-                      placeholder="What's this about?"
+                      placeholder="What&apos;s this about?"
                     />
                   </div>
                   
@@ -310,7 +310,7 @@ export default function ContactPage() {
               <h2 className="text-3xl font-bold mb-6">Visit Our Workshop</h2>
               <p className="text-lg text-muted-foreground mb-6 leading-relaxed">
                 Located in the vibrant heart of Accra, our workshop is where traditional Ghanaian beadwork meets modern creativity. 
-                We'd love to show you around and let you see our skilled artisans at work, creating beautiful pieces that celebrate our rich cultural heritage.
+                We&apos;d love to show you around and let you see our skilled artisans at work, creating beautiful pieces that celebrate our rich cultural heritage.
               </p>
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
@@ -331,7 +331,7 @@ export default function ContactPage() {
                   By appointment only
                 </Badge>
                 <p className="text-sm text-muted-foreground">
-                  Please call ahead to schedule your visit. Yɛbɛhyɛ wo akwaaba! (We'll welcome you!)
+                  Please call ahead to schedule your visit. Yɛbɛhyɛ wo akwaaba! (We&apos;ll welcome you!)
                 </p>
               </div>
             </div>
