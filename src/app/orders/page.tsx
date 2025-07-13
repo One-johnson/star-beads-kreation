@@ -71,7 +71,27 @@ export default function OrdersPage() {
         </Card>
       ) : (
         <div className="space-y-6">
-          {orders.map((order: any) => (
+          {orders.map((order: {
+            _id: string;
+            createdAt: number;
+            status: string;
+            total: number;
+            items: Array<{
+              productId: string;
+              name: string;
+              price: number;
+              quantity: number;
+              imageUrl: string;
+            }>;
+            shippingInfo: {
+              fullName: string;
+              address: string;
+              city: string;
+              state: string;
+              zipCode: string;
+              country: string;
+            };
+          }) => (
             <Card key={order._id}>
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -113,7 +133,13 @@ export default function OrdersPage() {
                   <div>
                     <h4 className="font-medium mb-2">Order Items</h4>
                     <div className="space-y-2">
-                      {order.items.slice(0, 3).map((item: any, idx: number) => (
+                      {order.items.slice(0, 3).map((item: {
+                        productId: string;
+                        name: string;
+                        price: number;
+                        quantity: number;
+                        imageUrl: string;
+                      }, idx: number) => (
                         <div key={idx} className="flex items-center gap-2">
                           <Image src={item.imageUrl} alt={item.name} width={32} height={32} className="w-8 h-8 object-cover rounded" />
                           <div className="flex-1 min-w-0">
