@@ -3,6 +3,7 @@ import React, { useState, useCallback } from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { ProductGrid } from "@/components/ProductGrid";
+import { ProductGridSkeleton } from "@/components/ProductSkeleton";
 import { SearchAndFilter, SearchFilters } from "@/components/SearchAndFilter";
 
 export default function ProductsPage() {
@@ -46,7 +47,7 @@ export default function ProductsPage() {
         {/* Products Grid */}
         <div className="lg:col-span-3">
           {products === undefined ? (
-            <div className="text-center py-12">Loading products...</div>
+            <ProductGridSkeleton count={9} />
           ) : products.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground mb-4">No products found matching your criteria.</p>
