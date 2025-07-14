@@ -172,7 +172,7 @@ export default function Home() {
         </div>
         <div className="text-center mt-8">
           <Link href="/about" className="text-primary font-medium hover:underline">Read more reviews</Link>
-        </div>
+    </div>
       </motion.section>
     </main>
   );
