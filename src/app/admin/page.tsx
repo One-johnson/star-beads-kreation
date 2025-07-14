@@ -16,8 +16,10 @@ export default function AdminPage() {
   const allProducts = useQuery(api.products.listProducts);
   const allOrders = useQuery(api.authQueries.getAllOrders);
 
+  console.log("Current user:", user);
+
   // Simple admin check - in a real app, you'd have proper role-based access
-  if (!user || user.email !== "admin@example.com") {
+  if (!user || user.role !== "admin") {
     return (
       <div className="max-w-6xl mx-auto p-8">
         <div className="text-center text-muted-foreground">

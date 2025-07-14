@@ -19,6 +19,7 @@ export default defineSchema({
     name: v.string(),
     contact: v.optional(v.string()),
     passwordHash: v.string(),
+    role: v.string(), // New: user role ('admin', 'manager', 'customer')
     createdAt: v.number(),
   }).index("by_email", ["email"]),
   sessions: defineTable({

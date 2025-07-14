@@ -21,6 +21,7 @@ export const createUser = mutation({
       name: args.name,
       contact: args.contact,
       passwordHash: args.passwordHash,
+      role: "customer", // Default role
       createdAt: Date.now(),
     });
   },
@@ -72,6 +73,15 @@ export const updateUserContact = mutation({
   args: { userId: v.id("users"), contact: v.string() },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.userId, { contact: args.contact });
+    return { success: true };
+  },
+});
+
+// Promote or demote a user by updating their role
+export const updateUserRole = mutation({
+  args: { userId: v.id("users"), role: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { role: args.role });
     return { success: true };
   },
 });

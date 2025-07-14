@@ -12,7 +12,7 @@ export const getCurrentUser = query({
     if (!session) return null;
     const user = await ctx.db.get(session.userId);
     if (!user) return null;
-    return { email: user.email, name: user.name, contact: user.contact, userId: user._id };
+    return { email: user.email, name: user.name, contact: user.contact, userId: user._id, role: user.role };
   },
 });
 
