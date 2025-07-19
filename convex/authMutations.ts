@@ -14,14 +14,20 @@ export const findUserByEmail = query({
 
 // Create user
 export const createUser = mutation({
-  args: { email: v.string(), name: v.string(), contact: v.string(), passwordHash: v.string() },
+  args: { 
+    email: v.string(), 
+    name: v.string(), 
+    contact: v.string(), 
+    passwordHash: v.string(),
+    role: v.optional(v.union(v.literal("admin"), v.literal("customer")))
+  },
   handler: async (ctx, args) => {
     return await ctx.db.insert("users", {
-      email: args.email,
       name: args.name,
-      contact: args.contact,
+      email: args.email,
       passwordHash: args.passwordHash,
-      role: "customer", // Default role
+      role: args.role || "customer",
+      contact: args.contact,
       createdAt: Date.now(),
     });
   },
@@ -79,7 +85,7 @@ export const updateUserContact = mutation({
 
 // Promote or demote a user by updating their role
 export const updateUserRole = mutation({
-  args: { userId: v.id("users"), role: v.string() },
+  args: { userId: v.id("users"), role: v.union(v.literal("admin"), v.literal("customer")) },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.userId, { role: args.role });
     return { success: true };
