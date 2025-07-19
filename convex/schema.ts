@@ -44,6 +44,7 @@ export default defineSchema({
     shippingInfo: v.object({
       fullName: v.string(),
       email: v.string(),
+      phone: v.string(),
       address: v.string(),
       city: v.string(),
       state: v.string(),

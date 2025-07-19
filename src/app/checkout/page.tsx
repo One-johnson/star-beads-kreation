@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
+import { Id } from "@/../convex/_generated/dataModel";
 
 interface ShippingInfo {
   fullName: string;
@@ -100,7 +101,10 @@ export default function CheckoutPage() {
       // Create order
       const orderId = await createOrder({
         userId: user.userId,
-        items: cart.items,
+        items: cart.items.map(item => ({
+          ...item,
+          productId: item.productId as Id<"products">
+        })),
         total: total,
         shippingInfo: shippingInfo,
       });

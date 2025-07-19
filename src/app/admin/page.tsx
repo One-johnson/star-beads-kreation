@@ -4,8 +4,7 @@ import React from "react";
 import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
@@ -23,8 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { 
-  LineChart, 
-  Line, 
+
   AreaChart, 
   Area, 
   BarChart, 
@@ -38,6 +36,7 @@ import {
   Pie,
   Cell
 } from "recharts";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 export default function AdminPage() {
   const { user } = useAuth();

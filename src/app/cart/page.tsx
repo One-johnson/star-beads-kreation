@@ -54,7 +54,7 @@ export default function CartPage() {
         ) : (
           <>
             <div className="flex flex-col gap-6 mb-6">
-              {cart.items?.map((item: { productId: Id<"products">; name: string; price: number; quantity: number; imageUrl: string }) => (
+              {cart.items?.map((item: { productId: string; name: string; price: number; quantity: number; imageUrl: string }) => (
                 <div key={item.productId} className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0">
                   <Image src={item.imageUrl} alt={item.name} width={64} height={64} className="w-16 h-16 object-cover rounded" />
                   <div className="flex-1">
@@ -65,10 +65,10 @@ export default function CartPage() {
                     type="number"
                     min={1}
                     value={item.quantity}
-                    onChange={e => handleQuantityChange(item.productId, Number(e.target.value))}
+                    onChange={e => handleQuantityChange(item.productId as Id<"products">, Number(e.target.value))}
                     className="w-16 border rounded px-2 py-1 text-center"
                   />
-                  <Button variant="ghost" size="sm" onClick={() => handleRemove(item.productId)}>
+                  <Button variant="ghost" size="sm" onClick={() => handleRemove(item.productId as Id<"products">)}>
                     Remove
                   </Button>
                 </div>
