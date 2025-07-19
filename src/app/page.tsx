@@ -165,7 +165,7 @@ export default function Home() {
                   <Star key={i} className="w-5 h-5 text-gray-300" />
                 ))}
               </div>
-              <p className="text-muted-foreground mb-4">"{review.text}"</p>
+              <p className="text-muted-foreground mb-4">&ldquo;{review.text}&rdquo;</p>
               <div className="font-semibold text-primary">{review.name}</div>
             </motion.div>
           ))}
