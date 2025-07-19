@@ -5,6 +5,13 @@ import { useMutation } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { Button } from "@/components/ui/button";
 
+interface User {
+  userId: string;
+  role: string;
+  name: string;
+  email: string;
+}
+
 export default function PromoteMePage() {
   const { user } = useAuth();
   const updateUserRole = useMutation(api.authMutations.updateUserRole);
@@ -16,7 +23,7 @@ export default function PromoteMePage() {
     return <div className="max-w-xl mx-auto p-8 text-center">Please sign in to promote yourself.</div>;
   }
 
-  if ((user as any).role === "admin") {
+  if ((user as User).role === "admin") {
     return <div className="max-w-xl mx-auto p-8 text-center">You are already an admin.</div>;
   }
 
@@ -26,8 +33,9 @@ export default function PromoteMePage() {
     try {
       await updateUserRole({ userId: user.userId, role: "admin" });
       setSuccess(true);
-    } catch (err: any) {
-      setError(err.message || "Something went wrong");
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : "Something went wrong";
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
