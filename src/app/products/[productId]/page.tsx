@@ -100,16 +100,19 @@ export default function ProductPage({ params }: ProductPageProps) {
         {/* Product Image */}
         <div className="relative">
           <Image src={product.imageUrl} alt={product.name} width={400} height={400} className="w-full h-auto object-cover rounded" />
-          <div className="absolute top-4 right-4">
-            <WishlistButton productId={product._id} />
+          <div className="absolute top-4 right-4 z-10">
+            <WishlistButton 
+              productId={product._id} 
+              className="bg-white/90 hover:bg-white shadow-lg border-0 backdrop-blur-sm"
+            />
           </div>
           {product.stock !== undefined && product.stock <= 5 && product.stock > 0 && (
-            <Badge variant="destructive" className="absolute top-4 left-4">
+            <Badge variant="destructive" className="absolute top-4 left-4 z-10">
               Only {product.stock} left!
             </Badge>
           )}
           {product.stock === 0 && (
-            <Badge variant="destructive" className="absolute top-4 left-4">
+            <Badge variant="destructive" className="absolute top-4 left-4 z-10">
               Out of Stock
             </Badge>
           )}

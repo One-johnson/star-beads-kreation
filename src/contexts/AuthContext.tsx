@@ -5,6 +5,7 @@ import { api } from "@/../convex/_generated/api";
 import { Id } from "@/../convex/_generated/dataModel";
 
 interface User {
+  _id: Id<"users">;
   role: string;
   userId: Id<"users">;
   email: string;

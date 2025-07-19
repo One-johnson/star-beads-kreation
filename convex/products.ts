@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 import { v } from "convex/values";
 
 // Product schema: name, description, price, imageUrl, createdAt
@@ -127,5 +127,110 @@ export const getRelatedProducts = query({
       .take(limit);
 
     return relatedProducts;
+  },
+});
+
+// Update a product
+export const updateProduct = mutation({
+  args: {
+    id: v.id("products"),
+    name: v.optional(v.string()),
+    description: v.optional(v.string()),
+    price: v.optional(v.number()),
+    imageUrl: v.optional(v.string()),
+    category: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
+    stock: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    const { id, ...updates } = args;
+    const product = await ctx.db.patch(id, updates);
+    return product;
+  },
+});
+
+// Delete a product
+export const deleteProduct = mutation({
+  args: { id: v.id("products") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.id);
+    return { success: true };
+  },
+});
+
+// Bulk update product stock
+export const bulkUpdateStock = mutation({
+  args: {
+    updates: v.array(v.object({
+      id: v.id("products"),
+      stock: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    const results = [];
+    for (const update of args.updates) {
+      const result = await ctx.db.patch(update.id, { stock: update.stock });
+      results.push(result);
+    }
+    return results;
+  },
+});
+
+// Bulk delete products
+export const bulkDeleteProducts = mutation({
+  args: {
+    productIds: v.array(v.id("products")),
+  },
+  handler: async (ctx, args) => {
+    const results = [];
+    for (const productId of args.productIds) {
+      const result = await ctx.db.delete(productId);
+      results.push(result);
+    }
+    return results;
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const adminStoreImageFromUrl = action({
+  args: { imageUrl: v.string(), adminId: v.string() },
+  handler: async (ctx, args) => {
+    // (Optional) Check admin privileges here
+    // const admin = await ctx.db.get(args.adminId);
+    // if (!admin || admin.role !== "admin") throw new Error("Not authorized");
+
+    // Download the image
+    const response = await fetch(args.imageUrl);
+    if (!response.ok) throw new Error("Failed to fetch image");
+    const image = await response.blob();
+
+    // Store in Convex storage
+    const storageId = await ctx.storage.store(image);
+
+    // Return the storageId
+    return storageId;
+  },
+});
+
+export const deleteById = mutation({
+  args: {
+    storageId: v.id("_storage"),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.storage.delete(args.storageId);
+  },
+});
+
+// Get storage URL for a given storage ID
+export const getStorageUrl = mutation({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
   },
 });

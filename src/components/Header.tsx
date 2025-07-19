@@ -9,6 +9,8 @@ import { useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { Badge } from "@/components/ui/badge";
 import { Heart, ShoppingCart } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { Menu } from "lucide-react";
 
 export function Header() {
   const { user, setSessionToken } = useAuth();
@@ -36,18 +38,19 @@ export function Header() {
         <Link href="/" className="text-xl font-bold tracking-tight text-primary">
           Star Beads Kreation
         </Link>
-        
-        {/* Centered Navigation Links */}
-        <div className="flex gap-6 items-center">
+        {/* Desktop Navigation Links */}
+        <div className="hidden md:flex gap-6 items-center">
           <Link href="/" className="hover:underline underline-offset-4">Home</Link>
           <Link href="/products" className="hover:underline underline-offset-4">Products</Link>
           <Link href="/categories" className="hover:underline underline-offset-4">Categories</Link>
           <Link href="/gallery" className="hover:underline underline-offset-4">Gallery</Link>
           <Link href="/about" className="hover:underline underline-offset-4">About</Link>
+          {user?.role === "admin" && (
+            <Link href="/admin" className="hover:underline underline-offset-4 text-primary font-medium">Admin</Link>
+          )}
         </div>
-        
-        {/* Right Side Actions */}
-        <div className="flex gap-3 items-center">
+        {/* Desktop Right Side Actions */}
+        <div className="hidden md:flex gap-3 items-center">
           {user && (
             <Button asChild variant="outline" size="sm" className="relative">
               <Link href="/wishlist">
@@ -97,6 +100,11 @@ export function Header() {
                 <DropdownMenuItem asChild>
                   <Link href="/orders">Orders</Link>
                 </DropdownMenuItem>
+                {user?.role === "admin" && (
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin">Admin Dashboard</Link>
+                  </DropdownMenuItem>
+                )}
                 <div className="my-2 border-t" />
                 <DropdownMenuItem asChild>
                   <ThemeToggle />
@@ -110,6 +118,41 @@ export function Header() {
           ) : (
             <Link href="/auth" className="hover:underline underline-offset-4">Sign In</Link>
           )}
+        </div>
+        {/* Mobile Hamburger Menu */}
+        <div className="md:hidden flex items-center">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" className="p-2">
+                <Menu className="w-6 h-6" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="pt-12 w-64">
+              <SheetTitle className="sr-only">Main Navigation</SheetTitle>
+              <nav className="flex flex-col gap-6">
+                <Link href="/" className="text-lg font-medium">Home</Link>
+                <Link href="/products" className="text-lg font-medium">Products</Link>
+                <Link href="/categories" className="text-lg font-medium">Categories</Link>
+                <Link href="/gallery" className="text-lg font-medium">Gallery</Link>
+                <Link href="/about" className="text-lg font-medium">About</Link>
+                {user?.role === "admin" && (
+                  <Link href="/admin" className="text-lg font-medium text-primary">Admin</Link>
+                )}
+                <div className="border-t my-2" />
+                {user ? (
+                  <>
+                    <Link href="/profile" className="text-lg">Profile</Link>
+                    <Link href="/orders" className="text-lg">Orders</Link>
+                    <Button variant="ghost" className="justify-start p-0 text-lg text-red-600" onClick={handleLogout}>Logout</Button>
+                  </>
+                ) : (
+                  <Link href="/auth" className="text-lg">Sign In</Link>
+                )}
+                <div className="border-t my-2" />
+                <ThemeToggle />
+              </nav>
+            </SheetContent>
+          </Sheet>
         </div>
       </nav>
     </header>
