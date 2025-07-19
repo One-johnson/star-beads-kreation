@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      user: user || null,
+      user: user ? { _id: user.userId, ...user } : null,
       sessionToken,
       isLoading,
       setSessionToken: handleSetSessionToken,

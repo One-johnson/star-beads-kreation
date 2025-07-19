@@ -32,9 +32,7 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  DollarSign,
   User,
-  Calendar,
   MapPin,
   Phone,
   Mail,
@@ -42,7 +40,7 @@ import {
   Save,
   Loader2
 } from "lucide-react";
-import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 
 export default function OrderDetailsPage() {
@@ -226,10 +224,13 @@ export default function OrderDetailsPage() {
               <div className="space-y-4">
                 {order.items.map((item: any, index: number) => (
                   <div key={index} className="flex items-center gap-4 p-3 border rounded-lg">
-                    <img
+                    <Image
                       src={item.imageUrl}
                       alt={item.name}
+                      width={64}
+                      height={64}
                       className="w-16 h-16 rounded-md object-cover"
+                      unoptimized={true}
                     />
                     <div className="flex-1">
                       <div className="font-medium">{item.name}</div>

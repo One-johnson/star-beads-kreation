@@ -53,6 +53,7 @@ import {
   ArrowLeft
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 
 export default function AdminProductsPage() {
@@ -326,10 +327,13 @@ export default function AdminProductsPage() {
                       <TableRow key={product._id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
-                            <img
+                            <Image
                               src={product.imageUrl}
                               alt={product.name}
+                              width={48}
+                              height={48}
                               className="w-12 h-12 rounded-md object-cover"
+                              unoptimized={true}
                             />
                             <div>
                               <div className="font-medium">{product.name}</div>

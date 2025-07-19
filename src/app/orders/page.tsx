@@ -90,6 +90,7 @@ export default function OrdersPage() {
               state: string;
               zipCode: string;
               country: string;
+              phone?: string;
             };
           }) => (
             <Card key={order._id}>
@@ -125,6 +126,7 @@ export default function OrdersPage() {
                     <h4 className="font-medium mb-2">Shipping Address</h4>
                     <div className="text-sm text-muted-foreground">
                       <div>{order.shippingInfo.fullName}</div>
+                      {order.shippingInfo.phone && <div>{order.shippingInfo.phone}</div>}
                       <div>{order.shippingInfo.address}</div>
                       <div>{order.shippingInfo.city}, {order.shippingInfo.state} {order.shippingInfo.zipCode}</div>
                       <div>{order.shippingInfo.country}</div>

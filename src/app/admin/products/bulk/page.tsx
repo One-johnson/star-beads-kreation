@@ -30,6 +30,7 @@ import {
   Trash2
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -340,10 +341,13 @@ export default function BulkOperationsPage() {
                         onClick={(e) => e.stopPropagation()}
                       />
                       
-                      <img
+                      <Image
                         src={product.imageUrl}
                         alt={product.name}
+                        width={48}
+                        height={48}
                         className="w-12 h-12 rounded-md object-cover"
+                        unoptimized={true}
                       />
                       
                       <div className="flex-1 min-w-0">

@@ -151,7 +151,7 @@ export default function OrderPage({ params }: OrderPageProps) {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {order.items.map((item: { productId: Id<"products">; name: string; price: number; quantity: number; imageUrl: string }) => (
+            {order.items.map((item: { productId: string; name: string; price: number; quantity: number; imageUrl: string }) => (
               <div key={item.productId} className="flex items-center gap-4 border-b pb-4 last:border-b-0 last:pb-0">
                 <Image src={item.imageUrl} alt={item.name} width={64} height={64} className="w-16 h-16 object-cover rounded" />
                 <div className="flex-1">

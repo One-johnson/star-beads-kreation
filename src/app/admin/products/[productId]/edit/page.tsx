@@ -31,6 +31,7 @@ import {
   Loader2
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { toast } from "sonner";
 
 export default function EditProductPage() {
@@ -292,13 +293,13 @@ export default function EditProductPage() {
                   <div className="space-y-2">
                     <Label>Image Preview</Label>
                     <div className="border rounded-lg p-4">
-                      <img
+                      <Image
                         src={formData.imageUrl}
                         alt="Product preview"
+                        width={400}
+                        height={192}
                         className="w-full h-48 object-cover rounded-md"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
+                        unoptimized={true}
                       />
                     </div>
                   </div>
