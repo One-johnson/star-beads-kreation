@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Heart, ShoppingCart } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { Menu } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { NotificationDropdown } from "@/components/NotificationDropdown";
 
 export function Header() {
   const { user, setSessionToken } = useAuth();
@@ -27,6 +29,8 @@ export function Header() {
     user ? { userId: user.userId } : "skip"
   );
 
+  const pathname = usePathname();
+
   const handleLogout = () => {
     setSessionToken(null);
   };
@@ -40,17 +44,19 @@ export function Header() {
         </Link>
         {/* Desktop Navigation Links */}
         <div className="hidden md:flex gap-6 items-center">
-          <Link href="/" className="hover:underline underline-offset-4">Home</Link>
-          <Link href="/products" className="hover:underline underline-offset-4">Products</Link>
-          <Link href="/categories" className="hover:underline underline-offset-4">Categories</Link>
-          <Link href="/gallery" className="hover:underline underline-offset-4">Gallery</Link>
-          <Link href="/about" className="hover:underline underline-offset-4">About</Link>
+          <Link href="/" className={pathname === "/" ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4"}>Home</Link>
+          <Link href="/products" className={pathname.startsWith("/products") ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4"}>Products</Link>
+          <Link href="/categories" className={pathname.startsWith("/categories") ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4"}>Categories</Link>
+          <Link href="/gallery" className={pathname.startsWith("/gallery") ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4"}>Gallery</Link>
+          <Link href="/blog" className={pathname.startsWith("/blog") ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4"}>Blog</Link>
+          <Link href="/about" className={pathname.startsWith("/about") ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4"}>About</Link>
           {user?.role === "admin" && (
-            <Link href="/admin" className="hover:underline underline-offset-4 text-primary font-medium">Admin</Link>
+            <Link href="/admin" className={pathname.startsWith("/admin") ? "font-bold text-primary underline underline-offset-4" : "hover:underline underline-offset-4 text-primary font-medium"}>Admin</Link>
           )}
         </div>
         {/* Desktop Right Side Actions */}
         <div className="hidden md:flex gap-3 items-center">
+          <NotificationDropdown />
           {user && (
             <Button asChild variant="outline" size="sm" className="relative">
               <Link href="/wishlist">
@@ -130,13 +136,14 @@ export function Header() {
             <SheetContent side="left" className="pt-12 w-64">
               <SheetTitle className="sr-only">Main Navigation</SheetTitle>
               <nav className="flex flex-col gap-6">
-                <Link href="/" className="text-lg font-medium">Home</Link>
-                <Link href="/products" className="text-lg font-medium">Products</Link>
-                <Link href="/categories" className="text-lg font-medium">Categories</Link>
-                <Link href="/gallery" className="text-lg font-medium">Gallery</Link>
-                <Link href="/about" className="text-lg font-medium">About</Link>
+                <Link href="/" className={pathname === "/" ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Home</Link>
+                <Link href="/products" className={pathname.startsWith("/products") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Products</Link>
+                <Link href="/categories" className={pathname.startsWith("/categories") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Categories</Link>
+                <Link href="/gallery" className={pathname.startsWith("/gallery") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Gallery</Link>
+                <Link href="/blog" className={pathname.startsWith("/blog") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Blog</Link>
+                <Link href="/about" className={pathname.startsWith("/about") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>About</Link>
                 {user?.role === "admin" && (
-                  <Link href="/admin" className="text-lg font-medium text-primary">Admin</Link>
+                  <Link href="/admin" className={pathname.startsWith("/admin") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium text-primary"}>Admin</Link>
                 )}
                 <div className="border-t my-2" />
                 {user ? (

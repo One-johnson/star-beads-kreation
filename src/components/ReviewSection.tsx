@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Star, MessageCircle } from "lucide-react";
 import { Id } from "@/../convex/_generated/dataModel";
+import { toast } from "sonner";
 
 interface ReviewSectionProps {
   productId: Id<"products">;
@@ -19,11 +20,20 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
   const { user } = useAuth();
   const reviews = useQuery(api.reviews.getProductReviews, { productId });
   const addReview = useMutation(api.reviews.addReview);
+  const userOrders = user ? useQuery(api.authQueries.getUserOrders, { userId: user.userId }) : undefined;
+  const hasPurchased = user && userOrders && userOrders.some((order: { items: any[] }) => order.items.some((item: any) => item.productId === productId));
   
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [editingReviewId, setEditingReviewId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editComment, setEditComment] = useState("");
+
+  // Add review mutations
+  const deleteReview = useMutation(api.reviews.deleteReview);
+  const updateReview = useMutation(api.reviews.updateReview);
 
   const handleSubmitReview = async () => {
     if (!user || !comment.trim()) return;
@@ -45,6 +55,36 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
       alert("You have already reviewed this product.");
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleEdit = (review: any) => {
+    setEditingReviewId(review._id);
+    setEditRating(review.rating);
+    setEditComment(review.comment);
+  };
+
+  const handleUpdateReview = async (reviewId: string) => {
+    if (!editComment.trim()) return;
+    try {
+      await updateReview({
+        reviewId: { __tableName: "reviews" } as Id<"reviews"> & { _id?: string }, // fix type
+        rating: editRating,
+        comment: editComment.trim(),
+      });
+      setEditingReviewId(null);
+      toast.success("Review updated!");
+    } catch (error) {
+      toast.error("Failed to update review.");
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      await deleteReview({ reviewId: { __tableName: "reviews", _id: reviewId } as unknown as Id<"reviews"> });
+      toast.success("Review deleted.");
+    } catch (error) {
+      toast.error("Failed to delete review.");
     }
   };
 
@@ -79,6 +119,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
               variant="outline"
               size="sm"
               onClick={() => setShowReviewForm(!showReviewForm)}
+              disabled={!hasPurchased}
             >
               {showReviewForm ? "Cancel" : "Write Review"}
             </Button>
@@ -88,7 +129,7 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
 
       <CardContent className="space-y-4">
         {/* Review Form */}
-        {showReviewForm && user && (
+        {showReviewForm && user && hasPurchased && (
           <Card className="border-2 border-dashed">
             <CardContent className="pt-6">
               <div className="space-y-4">
@@ -123,6 +164,12 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
             </CardContent>
           </Card>
         )}
+        {/* Show message if user is logged in but hasn't purchased */}
+        {user && !hasPurchased && (
+          <div className="text-center text-muted-foreground text-sm">
+            You must purchase this product before leaving a review.
+          </div>
+        )}
 
         {/* Reviews List */}
         <div className="space-y-4">
@@ -146,7 +193,38 @@ export function ReviewSection({ productId }: ReviewSectionProps) {
                     {renderStars(review.rating)}
                   </Badge>
                 </div>
-                <p className="text-sm">{review.comment}</p>
+                {editingReviewId === review._id ? (
+                  <div className="space-y-2">
+                    <div>{renderStars(editRating, true)}</div>
+                    <Textarea
+                      value={editComment}
+                      onChange={e => setEditComment(e.target.value)}
+                      rows={3}
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => handleUpdateReview(review._id)}>
+                        Save
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={() => setEditingReviewId(null)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm">{review.comment}</p>
+                    {user && review.userId === user.userId && (
+                      <div className="flex gap-2 mt-2">
+                        <Button size="sm" variant="outline" onClick={() => handleEdit(review)}>
+                          Edit
+                        </Button>
+                        <Button size="sm" variant="destructive" onClick={() => handleDeleteReview(review._id)}>
+                          Delete
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             ))
           )}

@@ -20,6 +20,8 @@ import type * as categories from "../categories.js";
 import type * as cms from "../cms.js";
 import type * as customers from "../customers.js";
 import type * as deleteAllOrders from "../deleteAllOrders.js";
+import type * as emailActions from "../emailActions.js";
+import type * as notifications from "../notifications.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 import type * as reviews from "../reviews.js";
@@ -42,6 +44,8 @@ declare const fullApi: ApiFromModules<{
   cms: typeof cms;
   customers: typeof customers;
   deleteAllOrders: typeof deleteAllOrders;
+  emailActions: typeof emailActions;
+  notifications: typeof notifications;
   orders: typeof orders;
   products: typeof products;
   reviews: typeof reviews;

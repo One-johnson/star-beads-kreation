@@ -109,6 +109,8 @@ export default defineSchema({
     publishedAt: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
+    type: v.optional(v.union(v.literal("blog"), v.literal("video"), v.literal("tutorial"))),
+    videoUrl: v.optional(v.string()),
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
     seoKeywords: v.optional(v.array(v.string())),
@@ -145,4 +147,14 @@ export default defineSchema({
     uploadedBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_uploader", ["uploadedBy"]),
+
+  notifications: defineTable({
+    userId: v.id("users"), // Who receives the notification
+    type: v.string(), // e.g. "order", "review", "stock", "signup", "message"
+    title: v.string(),
+    message: v.string(),
+    link: v.optional(v.string()), // e.g. /admin/orders/123
+    read: v.boolean(),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
 }); 

@@ -32,12 +32,20 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import Image from "next/image";
+import { useAction } from "convex/react";
+
+
 
 export default function NewBlogPostPage() {
   const { user } = useAuth();
   const router = useRouter();
   const createBlogPost = useMutation(api.cms.createBlogPost);
   const generateSlug = useMutation(api.cms.generateSlug);
+  const generateBlogUploadUrl = useMutation(api.cms.generateBlogUploadUrl);
+  const getBlogStorageUrl = useMutation(api.cms.getBlogStorageUrl);
+  const adminStoreBlogImageFromUrl = useAction(api.cms.adminStoreBlogImageFromUrl);
+  const deleteBlogImage = useMutation(api.cms.deleteBlogImage);
   
   const [formData, setFormData] = useState({
     title: "",
@@ -52,11 +60,18 @@ export default function NewBlogPostPage() {
     seoTitle: "",
     seoDescription: "",
     seoKeywords: [] as string[],
+    type: "blog" as "blog" | "video" | "tutorial",
+    videoUrl: "",
   });
   const [newTag, setNewTag] = useState("");
   const [newKeyword, setNewKeyword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isGeneratingSlug, setIsGeneratingSlug] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [storingFromUrl, setStoringFromUrl] = useState(false);
+  const [deletingImage, setDeletingImage] = useState(false);
+  const [imageWarning, setImageWarning] = useState("");
+  const [storageId, setStorageId] = useState<string>("");
 
   // Admin check
   if (!user || user.role !== "admin") {
@@ -166,6 +181,92 @@ export default function NewBlogPostPage() {
     }
   };
 
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const postUrl = await generateBlogUploadUrl();
+      const result = await fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": file.type },
+        body: file,
+      });
+      const { storageId } = await result.json();
+      const imageUrl = await getBlogStorageUrl({ storageId });
+      if (imageUrl) {
+        setFormData(prev => ({ ...prev, featuredImage: imageUrl as string }));
+        setStorageId(storageId);
+        checkImageSize(imageUrl as string);
+        toast.success("Image uploaded successfully!");
+      } else {
+        toast.error("Failed to get image URL");
+      }
+    } catch (err) {
+      toast.error("Failed to upload image");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleStoreFromUrl = async () => {
+    if (!formData.featuredImage || !user) return;
+    setStoringFromUrl(true);
+    try {
+      const storageId = await adminStoreBlogImageFromUrl({ imageUrl: formData.featuredImage, adminId: user.userId });
+      const imageUrl = await getBlogStorageUrl({ storageId });
+      if (imageUrl) {
+        setFormData(prev => ({ ...prev, featuredImage: imageUrl as string }));
+        setStorageId(storageId);
+        checkImageSize(imageUrl as string);
+        toast.success("Image stored from URL successfully!");
+      } else {
+        toast.error("Failed to get image URL");
+      }
+    } catch (err) {
+      toast.error("Failed to store image from URL");
+    } finally {
+      setStoringFromUrl(false);
+    }
+  };
+
+  const handleDeleteImage = async () => {
+    if (!storageId || !user) return;
+    setDeletingImage(true);
+    try {
+      await deleteBlogImage({ storageId });
+      setFormData(prev => ({ ...prev, featuredImage: "" }));
+      setStorageId("");
+      setImageWarning("");
+      toast.success("Image deleted successfully!");
+    } catch (err) {
+      toast.error("Failed to delete image");
+    } finally {
+      setDeletingImage(false);
+    }
+  };
+
+  const checkImageSize = (url: string) => {
+    if (!url) {
+      setImageWarning("");
+      return;
+    }
+    const img = new window.Image();
+    img.onload = function () {
+      if (img.naturalWidth < 300 || img.naturalHeight < 300) {
+        setImageWarning(
+          `Warning: Image is small (${img.naturalWidth}x${img.naturalHeight}). For best results, use images at least 300x300px.`
+        );
+      } else {
+        setImageWarning("");
+      }
+    };
+    img.onerror = function () {
+      setImageWarning("Could not load image to check size.");
+    };
+    img.src = url;
+  };
+
   const getStatusConfig = (status: string) => {
     const config = {
       draft: { label: "Draft", icon: Clock, color: "text-yellow-600" },
@@ -256,20 +357,98 @@ export default function NewBlogPostPage() {
                     value={formData.content}
                     onChange={(e) => handleInputChange("content", e.target.value)}
                     placeholder="Write your blog post content..."
-                    rows={15}
-                    required
+                    rows={12}
+                    className="min-h-[300px]"
                   />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="featuredImage">Featured Image URL</Label>
-                  <Input
-                    id="featuredImage"
-                    value={formData.featuredImage}
-                    onChange={(e) => handleInputChange("featuredImage", e.target.value)}
-                    placeholder="https://example.com/image.jpg"
-                  />
+                  <div className="flex gap-2">
+                    <Input
+                      id="featuredImage"
+                      value={formData.featuredImage}
+                      onChange={(e) => handleInputChange("featuredImage", e.target.value)}
+                      placeholder="https://example.com/image.jpg"
+                    />
+                    {user?.role === "admin" && formData.featuredImage && /^https?:\/\//.test(formData.featuredImage) && (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleStoreFromUrl}
+                        disabled={storingFromUrl}
+                      >
+                        {storingFromUrl ? "Storing..." : "Store from URL"}
+                      </Button>
+                    )}
+                  </div>
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="imageUpload">Or Upload Image</Label>
+                  <Input
+                    id="imageUpload"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    disabled={uploading}
+                  />
+                  {uploading && <div className="text-xs text-muted-foreground">Uploading...</div>}
+                </div>
+                {formData.featuredImage && (
+                  <div className="space-y-2">
+                    <Label>Image Preview</Label>
+                    <div className="border rounded-lg p-4 relative">
+                      <Image
+                        src={formData.featuredImage}
+                        alt="Blog preview"
+                        width={400}
+                        height={192}
+                        className="w-full h-48 object-cover rounded-md"
+                        unoptimized={true}
+                      />
+                      {user?.role === "admin" && storageId && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="destructive"
+                          className="absolute top-2 right-2"
+                          onClick={handleDeleteImage}
+                          disabled={deletingImage}
+                        >
+                          {deletingImage ? "Deleting..." : "Delete Image"}
+                        </Button>
+                      )}
+                    </div>
+                    {imageWarning && (
+                      <div className="text-sm text-yellow-600 mt-2">{imageWarning}</div>
+                    )}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <Label htmlFor="type">Type *</Label>
+                  <Select value={formData.type} onValueChange={value => setFormData(prev => ({ ...prev, type: value as any }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="blog">Blog</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="tutorial">Tutorial</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {formData.type === "video" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="videoUrl">Video URL</Label>
+                    <Input
+                      id="videoUrl"
+                      value={formData.videoUrl}
+                      onChange={e => handleInputChange("videoUrl", e.target.value)}
+                      placeholder="https://youtube.com/..."
+                    />
+                  </div>
+                )}
               </CardContent>
             </Card>
 

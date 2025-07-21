@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 import { v } from "convex/values";
 
 // ===== BLOG POSTS =====
@@ -127,6 +127,8 @@ export const updateBlogPost = mutation({
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
     seoKeywords: v.optional(v.array(v.string())),
+    type: v.optional(v.union(v.literal("blog"), v.literal("video"), v.literal("tutorial"))),
+    videoUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const { postId, ...updates } = args;
@@ -370,5 +372,45 @@ export const generateSlug = mutation({
     }
     
     return slug;
+  },
+}); 
+
+// Generate upload URL for blog images
+export const generateBlogUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+// Get storage URL for a blog image
+export const getBlogStorageUrl = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
+// Store blog image from URL (admin)
+export const adminStoreBlogImageFromUrl = action({
+  args: { imageUrl: v.string(), adminId: v.string() },
+  handler: async (ctx, args) => {
+    // (Optional) Check admin privileges here
+    // const admin = await ctx.db.get(args.adminId);
+    // if (!admin || admin.role !== "admin") throw new Error("Not authorized");
+    const response = await fetch(args.imageUrl);
+    if (!response.ok) throw new Error("Failed to fetch image");
+    const image = await response.blob();
+    const storageId = await ctx.storage.store(image);
+    return storageId;
+  },
+});
+
+// Delete a blog image by storageId
+export const deleteBlogImage = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.storage.delete(args.storageId);
+    return true;
   },
 }); 
