@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 // Find user by email
 export const findUserByEmail = query({
@@ -12,6 +13,12 @@ export const findUserByEmail = query({
   },
 });
 
+// Helper to get all admin user IDs
+async function getAdminUserIds(ctx: any) {
+  const admins = await ctx.db.query("users").collect();
+  return admins.filter((u: any) => u.role === "admin").map((u: any) => u._id);
+}
+
 // Create user
 export const createUser = mutation({
   args: { 
@@ -22,7 +29,7 @@ export const createUser = mutation({
     role: v.optional(v.union(v.literal("admin"), v.literal("customer")))
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("users", {
+    const userId = await ctx.db.insert("users", {
       name: args.name,
       email: args.email,
       passwordHash: args.passwordHash,
@@ -30,6 +37,32 @@ export const createUser = mutation({
       contact: args.contact,
       createdAt: Date.now(),
     });
+
+    // Notify all admins of new signup
+    const adminIds = await getAdminUserIds(ctx);
+    for (const adminId of adminIds) {
+      await ctx.db.insert("notifications", {
+        userId: adminId,
+        type: "signup",
+        title: "New User Signup",
+        message: `${args.name} (${args.email}) just signed up!`,
+        link: undefined,
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
+    // (Optional) Welcome notification for the new user
+    await ctx.db.insert("notifications", {
+      userId,
+      type: "welcome",
+      title: "Welcome to Star Beads Kreation!",
+      message: `Hi ${args.name}, thanks for signing up!`,
+      link: undefined,
+      read: false,
+      createdAt: Date.now(),
+    });
+
+    return userId;
   },
 });
 
@@ -224,6 +257,70 @@ export const createOrder = mutation({
       shippingInfo: args.shippingInfo,
       createdAt: Date.now(),
     });
+
+    // Notify all admins of new order
+    const adminIds = await getAdminUserIds(ctx);
+    for (const adminId of adminIds) {
+      await ctx.db.insert("notifications", {
+        userId: adminId,
+        type: "order",
+        title: "New Order Placed",
+        message: `Order placed by ${args.shippingInfo.fullName}`,
+        link: `/admin/orders/${orderId}`,
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
+    // Notify customer
+    await ctx.db.insert("notifications", {
+      userId: args.userId,
+      type: "order",
+      title: "Order Placed Successfully!",
+      message: `Your order has been placed. We'll keep you updated!`,
+      link: `/orders/${orderId}`,
+      read: false,
+      createdAt: Date.now(),
+    });
+
+    // Send order confirmation email
+    try {
+      console.log("Starting email process for order:", orderId);
+      console.log("Customer email:", args.shippingInfo.email);
+      
+      const emailData = {
+        orderId: orderId,
+        customerName: args.shippingInfo.fullName,
+        customerEmail: args.shippingInfo.email,
+        orderTotal: args.total,
+        orderItems: args.items,
+        shippingAddress: {
+          fullName: args.shippingInfo.fullName,
+          address: args.shippingInfo.address,
+          city: args.shippingInfo.city,
+          state: args.shippingInfo.state,
+          zipCode: args.shippingInfo.zipCode,
+        },
+        status: "pending",
+        orderDate: new Date().toLocaleDateString(),
+      };
+
+      console.log("Email data prepared:", emailData);
+
+      // Send email notification
+      await ctx.scheduler.runAfter(
+        0,
+        api.emailActions.sendOrderConfirmationEmail,
+        {
+          emailData,
+        }
+      );
+      
+      console.log("Email scheduled successfully for order:", orderId);
+    } catch (error) {
+      console.error("Failed to send order confirmation email:", error);
+      // Don't fail the order creation if email fails
+    }
+
     return orderId;
   },
 }); 

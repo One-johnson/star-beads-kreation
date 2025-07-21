@@ -163,6 +163,9 @@ export default function AdminPage() {
           <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
             <Link href="/admin/customers">Manage Customers</Link>
           </Button>
+          <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
+            <Link href="/admin/reviews">Reviews</Link>
+          </Button>
           <Button asChild size="sm" className="w-full sm:w-auto">
             <Link href="/admin/cms">Content Management</Link>
           </Button>

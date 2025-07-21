@@ -1,5 +1,6 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
+import { api } from "./_generated/api";
 
 // Get order by ID with user details
 export const getOrderById = query({
@@ -121,6 +122,12 @@ export const searchOrders = query({
   },
 });
 
+// Helper to get all admin user IDs
+async function getAdminUserIds(ctx: any) {
+  const admins = await ctx.db.query("users").collect();
+  return admins.filter((u: any) => u.role === "admin").map((u: any) => u._id);
+}
+
 // Update order status
 export const updateOrderStatus = mutation({
   args: {
@@ -134,7 +141,72 @@ export const updateOrderStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    // Get the order with user details
+    const order = await ctx.db.get(args.orderId);
+    if (!order) {
+      throw new Error("Order not found");
+    }
+
+    // Update the order status
     await ctx.db.patch(args.orderId, { status: args.status });
+
+    // Send notifications if status is not pending
+    if (args.status !== "pending") {
+      // Notify customer
+      await ctx.db.insert("notifications", {
+        userId: order.userId,
+        type: "order-status",
+        title: `Order Status Updated`,
+        message: `Your order #${order._id} status is now '${args.status}'.`,
+        link: `/orders/${order._id}`,
+        read: false,
+        createdAt: Date.now(),
+      });
+      // Notify all admins
+      const adminIds = await getAdminUserIds(ctx);
+      for (const adminId of adminIds) {
+        await ctx.db.insert("notifications", {
+          userId: adminId,
+          type: "order-status",
+          title: `Order Status Updated`,
+          message: `Order #${order._id} status is now '${args.status}'.`,
+          link: `/admin/orders/${order._id}`,
+          read: false,
+          createdAt: Date.now(),
+        });
+      }
+    }
+
+    // Send email notification if status is not pending
+    if (args.status !== "pending") {
+      try {
+        const user = await ctx.db.get(order.userId);
+        if (user) {
+          const emailData = {
+            orderId: order._id,
+            customerName: order.shippingInfo.fullName,
+            customerEmail: order.shippingInfo.email,
+            orderTotal: order.total,
+            orderItems: order.items,
+            shippingAddress: order.shippingInfo,
+            trackingNumber: order.trackingNumber,
+            carrier: order.carrier,
+            status: args.status,
+            orderDate: new Date(order.createdAt).toLocaleDateString(),
+          };
+
+          // Send email notification
+          await ctx.scheduler.runAfter(0, api.emailActions.sendOrderStatusEmail, {
+            emailData,
+            newStatus: args.status,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to send email notification:", error);
+        // Don't fail the status update if email fails
+      }
+    }
+
     return { success: true };
   },
 });

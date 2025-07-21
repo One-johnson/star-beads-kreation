@@ -1,8 +1,21 @@
 import { mutation, query, action } from "./_generated/server";
 import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
 
 // Product schema: name, description, price, imageUrl, createdAt
 // You can expand this as needed
+
+// Helper to get all customer user IDs
+async function getAllCustomerUserIds(ctx: any) {
+  const users = await ctx.db.query("users").collect();
+  return users.filter((u: any) => u.role === "customer").map((u: any) => u._id);
+}
+
+// Helper to get all admin user IDs
+async function getAllAdminUserIds(ctx: any) {
+  const users = await ctx.db.query("users").collect();
+  return users.filter((u: any) => u.role === "admin").map((u: any) => u._id);
+}
 
 // Create a product
 export const createProduct = mutation({
@@ -26,6 +39,20 @@ export const createProduct = mutation({
       stock: args.stock || 0,
       createdAt: Date.now(),
     });
+
+    // Notify all customers of new product
+    const customerIds = await getAllCustomerUserIds(ctx);
+    for (const customerId of customerIds) {
+      await ctx.db.insert("notifications", {
+        userId: customerId,
+        type: "product",
+        title: "New Product Added!",
+        message: `Check out our new product: ${args.name}`,
+        link: `/products/${product}`,
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
     return product;
   },
 });
@@ -144,7 +171,109 @@ export const updateProduct = mutation({
   },
   handler: async (ctx, args) => {
     const { id, ...updates } = args;
+    // Get previous product data
+    const prevProduct = await ctx.db.get(id);
     const product = await ctx.db.patch(id, updates);
+
+    // If price changed, notify wishlisters and previous buyers
+    if (updates.price !== undefined && prevProduct && updates.price !== prevProduct.price) {
+      // Notify wishlisters
+      const wishlists = await ctx.db.query("wishlists")
+        .withIndex("by_product", q => q.eq("productId", id))
+        .collect();
+      for (const wishlist of wishlists) {
+        await ctx.db.insert("notifications", {
+          userId: wishlist.userId,
+          type: "product",
+          title: "Price Drop!",
+          message: `The price of a product on your wishlist has changed: ${updates.name || prevProduct.name}`,
+          link: `/products/${id}`,
+          read: false,
+          createdAt: Date.now(),
+        });
+      }
+      // Notify previous buyers
+      const orders = await ctx.db.query("orders")
+        .withIndex("by_user", q => q)
+        .collect();
+      const buyers = new Set<Id<"users">>();
+      for (const order of orders) {
+        if (order.items.some((item: any) => item.productId === id)) {
+          buyers.add(order.userId);
+        }
+      }
+      for (const buyerId of buyers) {
+        await ctx.db.insert("notifications", {
+          userId: buyerId,
+          type: "product",
+          title: "Price Drop!",
+          message: `A product you purchased has a new price: ${updates.name || prevProduct.name}`,
+          link: `/products/${id}`,
+          read: false,
+          createdAt: Date.now(),
+        });
+      }
+    }
+
+    // Low stock notification to admins
+    if (updates.stock !== undefined && prevProduct) {
+      const wasLow = prevProduct.stock !== undefined && prevProduct.stock <= 5;
+      const isLow = updates.stock <= 5;
+      if (!wasLow && isLow) {
+        // Notify all admins
+        const adminIds = await getAllAdminUserIds(ctx);
+        for (const adminId of adminIds) {
+          await ctx.db.insert("notifications", {
+            userId: adminId,
+            type: "stock",
+            title: "Low Stock Alert",
+            message: `Stock for ${updates.name || prevProduct.name} is low (${updates.stock} left)`,
+            link: `/admin/products/${id}`,
+            read: false,
+            createdAt: Date.now(),
+          });
+        }
+      }
+      // Restock notification to wishlisters and buyers
+      if (wasLow && updates.stock > 5) {
+        // Notify wishlisters
+        const wishlists = await ctx.db.query("wishlists")
+          .withIndex("by_product", q => q.eq("productId", id))
+          .collect();
+        for (const wishlist of wishlists) {
+          await ctx.db.insert("notifications", {
+            userId: wishlist.userId,
+            type: "stock",
+            title: "Product Restocked!",
+            message: `${updates.name || prevProduct.name} is back in stock!`,
+            link: `/products/${id}`,
+            read: false,
+            createdAt: Date.now(),
+          });
+        }
+        // Notify previous buyers
+        const orders = await ctx.db.query("orders")
+          .withIndex("by_user", q => q)
+          .collect();
+        const buyers = new Set<Id<"users">>();
+        for (const order of orders) {
+          if (order.items.some((item: any) => item.productId === id)) {
+            buyers.add(order.userId);
+          }
+        }
+        for (const buyerId of buyers) {
+          await ctx.db.insert("notifications", {
+            userId: buyerId,
+            type: "stock",
+            title: "Product Restocked!",
+            message: `${updates.name || prevProduct.name} is back in stock!`,
+            link: `/products/${id}`,
+            read: false,
+            createdAt: Date.now(),
+          });
+        }
+      }
+    }
     return product;
   },
 });
@@ -169,7 +298,65 @@ export const bulkUpdateStock = mutation({
   handler: async (ctx, args) => {
     const results = [];
     for (const update of args.updates) {
+      // Get previous product data
+      const prevProduct = await ctx.db.get(update.id);
       const result = await ctx.db.patch(update.id, { stock: update.stock });
+      // Low stock notification to admins
+      if (prevProduct) {
+        const wasLow = prevProduct.stock !== undefined && prevProduct.stock <= 5;
+        const isLow = update.stock <= 5;
+        if (!wasLow && isLow) {
+          const adminIds = await getAllAdminUserIds(ctx);
+          for (const adminId of adminIds) {
+            await ctx.db.insert("notifications", {
+              userId: adminId,
+              type: "stock",
+              title: "Low Stock Alert",
+              message: `Stock for ${prevProduct.name} is low (${update.stock} left)` ,
+              link: `/admin/products/${update.id}`,
+              read: false,
+              createdAt: Date.now(),
+            });
+          }
+        }
+        // Restock notification to wishlisters and buyers
+        if (wasLow && update.stock > 5) {
+          const wishlists = await ctx.db.query("wishlists")
+            .withIndex("by_product", q => q.eq("productId", update.id))
+            .collect();
+          for (const wishlist of wishlists) {
+            await ctx.db.insert("notifications", {
+              userId: wishlist.userId,
+              type: "stock",
+              title: "Product Restocked!",
+              message: `${prevProduct.name} is back in stock!`,
+              link: `/products/${update.id}`,
+              read: false,
+              createdAt: Date.now(),
+            });
+          }
+          const orders = await ctx.db.query("orders")
+            .withIndex("by_user", q => q)
+            .collect();
+          const buyers = new Set<Id<"users">>();
+          for (const order of orders) {
+            if (order.items.some((item: any) => item.productId === update.id)) {
+              buyers.add(order.userId);
+            }
+          }
+          for (const buyerId of buyers) {
+            await ctx.db.insert("notifications", {
+              userId: buyerId,
+              type: "stock",
+              title: "Product Restocked!",
+              message: `${prevProduct.name} is back in stock!`,
+              link: `/products/${update.id}`,
+              read: false,
+              createdAt: Date.now(),
+            });
+          }
+        }
+      }
       results.push(result);
     }
     return results;

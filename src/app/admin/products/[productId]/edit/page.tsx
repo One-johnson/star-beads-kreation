@@ -392,7 +392,9 @@ export default function EditProductPage() {
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Product ID:</span>
-                  <span className="font-mono">{product._id}</span>
+                  <span className="font-mono" title={product._id}>
+                    {product._id.length > 13 ? product._id.slice(0, 13) + '…' : product._id}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Created:</span>
