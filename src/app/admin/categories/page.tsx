@@ -14,6 +14,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { MoreHorizontal } from "lucide-react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminCategoriesPage() {
   const { user } = useAuth();
@@ -123,11 +125,9 @@ export default function AdminCategoriesPage() {
     setPending(true);
     try {
       let url = imageUrl;
-      let sid = storageId;
       if (imageFile) {
         const { url: uploadedUrl, storageId: uploadedId } = await handleImageUpload(imageFile);
         url = uploadedUrl as string;
-        sid = uploadedId as string;
       }
       await addCategory({ name, description, imageUrl: url });
       setName("");
@@ -189,7 +189,17 @@ export default function AdminCategoriesPage() {
 
   return (
     <main className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Manage Categories</h1>
+      <div className="flex items-center gap-4 mb-6">
+        <Button asChild variant="outline" size="sm">
+          <Link href="/admin">
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </Link>
+        </Button>
+        <Link href="/admin" className="text-2xl font-bold hover:underline">
+          Manage Categories
+        </Link>
+      </div>
       <div className="mb-8 flex flex-col md:flex-row gap-4 items-end justify-between">
         <div className="flex gap-2 items-center">
           <Input
