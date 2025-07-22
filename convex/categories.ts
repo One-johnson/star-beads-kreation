@@ -28,6 +28,18 @@ export const getProductsByCategory = query({
   },
 });
 
+// Helper to get all user IDs
+async function getAllUserIds(ctx: any) {
+  const users = await ctx.db.query("users").collect();
+  return users.map((u: any) => u._id);
+}
+
+// Helper to get all admin user IDs
+async function getAllAdminUserIds(ctx: any) {
+  const users = await ctx.db.query("users").collect();
+  return users.filter((u: any) => u.role === "admin").map((u: any) => u._id);
+}
+
 // Add a new category
 export const addCategory = mutation({
   args: {
@@ -36,13 +48,39 @@ export const addCategory = mutation({
     imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert("categories", {
+    const categoryId = await ctx.db.insert("categories", {
       name: args.name,
       description: args.description || "",
       imageUrl: args.imageUrl || "",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
+    // Notify all admins and users
+    const adminIds = await getAllAdminUserIds(ctx);
+    const userIds = await getAllUserIds(ctx);
+    for (const adminId of adminIds) {
+      await ctx.db.insert("notifications", {
+        userId: adminId,
+        type: "category",
+        title: "New Category Created",
+        message: `A new category '${args.name}' has been created!`,
+        link: `/admin/categories`,
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
+    for (const userId of userIds) {
+      await ctx.db.insert("notifications", {
+        userId,
+        type: "category",
+        title: "New Category Created",
+        message: `Check out our new category: '${args.name}'!`,
+        link: `/categories/${categoryId}`,
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
+    return categoryId;
   },
 });
 

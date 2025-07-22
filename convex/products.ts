@@ -1,14 +1,15 @@
 import { mutation, query, action } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { api } from "./_generated/api";
 
 // Product schema: name, description, price, imageUrl, createdAt
 // You can expand this as needed
 
-// Helper to get all customer user IDs
-async function getAllCustomerUserIds(ctx: any) {
+// Helper to get all user IDs
+async function getAllUserIds(ctx: any) {
   const users = await ctx.db.query("users").collect();
-  return users.filter((u: any) => u.role === "customer").map((u: any) => u._id);
+  return users.map((u: any) => u._id);
 }
 
 // Helper to get all admin user IDs
@@ -25,35 +26,46 @@ export const createProduct = mutation({
     price: v.number(),
     imageUrl: v.string(),
     category: v.optional(v.string()),
-    tags: v.optional(v.array(v.string())),
     stock: v.optional(v.number()),
+    tags: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const product = await ctx.db.insert("products", {
+    const productId = await ctx.db.insert("products", {
       name: args.name,
       description: args.description,
       price: args.price,
       imageUrl: args.imageUrl,
       category: args.category,
+      stock: args.stock,
       tags: args.tags || [],
-      stock: args.stock || 0,
       createdAt: Date.now(),
     });
-
-    // Notify all customers of new product
-    const customerIds = await getAllCustomerUserIds(ctx);
-    for (const customerId of customerIds) {
+    // Notify all admins and users
+    const adminIds = await getAllAdminUserIds(ctx);
+    const userIds = await getAllUserIds(ctx);
+    for (const adminId of adminIds) {
       await ctx.db.insert("notifications", {
-        userId: customerId,
+        userId: adminId,
         type: "product",
-        title: "New Product Added!",
-        message: `Check out our new product: ${args.name}`,
-        link: `/products/${product}`,
+        title: "New Product Added",
+        message: `A new product '${args.name}' has been added to the store!`,
+        link: `/admin/products/${productId}`,
         read: false,
         createdAt: Date.now(),
       });
     }
-    return product;
+    for (const userId of userIds) {
+      await ctx.db.insert("notifications", {
+        userId,
+        type: "product",
+        title: "New Product Added",
+        message: `Check out our new product: '${args.name}'!`,
+        link: `/products/${productId}`,
+        read: false,
+        createdAt: Date.now(),
+      });
+    }
+    return productId;
   },
 });
 

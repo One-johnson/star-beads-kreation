@@ -6,6 +6,7 @@ import { api } from "@/../convex/_generated/api";
 import Link from "next/link";
 import { ProductCard } from "@/components/ProductCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 
 export default function CategoryDetailsPage() {
   const params = useParams();
@@ -41,7 +42,9 @@ export default function CategoryDetailsPage() {
 
   return (
     <main className="p-8">
-      <Link href="/categories" className="text-blue-600 hover:underline mb-4 inline-block">&larr; Back to Categories</Link>
+      <Button asChild variant="outline" className="mb-4">
+        <Link href="/categories">&larr; Back to Categories</Link>
+      </Button>
       <h1 className="text-3xl font-bold mb-2">{cat.name}</h1>
       <p className="mb-6 text-gray-600">{cat.description}</p>
 
