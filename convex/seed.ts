@@ -1,4 +1,60 @@
 import { mutation } from "./_generated/server";
+import { v } from "convex/values";
+
+export const seedCategories = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const categories = [
+      {
+        name: "Necklaces",
+        description: "Elegant and colorful beaded necklaces for every occasion.",
+        imageUrl: "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Bracelets",
+        description: "Handcrafted bracelets featuring traditional and modern designs.",
+        imageUrl: "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Earrings",
+        description: "Unique beaded earrings to complement any style.",
+        imageUrl: "https://images.unsplash.com/photo-1464983953574-0892a716854b?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Anklets",
+        description: "Vibrant anklets perfect for summer and festivals.",
+        imageUrl: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Rings",
+        description: "Statement rings crafted with colorful beads and wire.",
+        imageUrl: "https://images.unsplash.com/photo-1519125323398-675f0ddb6308?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Hair Accessories",
+        description: "Beaded hairpins, combs, and bands for a unique look.",
+        imageUrl: "https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Keychains",
+        description: "Fun and functional beaded keychains for everyday use.",
+        imageUrl: "https://images.unsplash.com/photo-1503602642458-232111445657?auto=format&fit=crop&w=400&q=80",
+      },
+      {
+        name: "Wall Art",
+        description: "Decorative beadwork for your home or office.",
+        imageUrl: "https://images.unsplash.com/photo-1465101178521-c1a9136a3b99?auto=format&fit=crop&w=400&q=80",
+      },
+    ];
+    for (const cat of categories) {
+      await ctx.db.insert("categories", {
+        ...cat,
+        createdAt: Date.now(),
+      });
+    }
+    return { success: true };
+  },
+});
 
 export default mutation(async ({ db }) => {
   // Bead image URLs (all beads, no clothes)

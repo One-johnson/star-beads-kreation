@@ -177,35 +177,7 @@ export const updateOrderStatus = mutation({
       }
     }
 
-    // Send email notification if status is not pending
-    if (args.status !== "pending") {
-      try {
-        const user = await ctx.db.get(order.userId);
-        if (user) {
-          const emailData = {
-            orderId: order._id,
-            customerName: order.shippingInfo.fullName,
-            customerEmail: order.shippingInfo.email,
-            orderTotal: order.total,
-            orderItems: order.items,
-            shippingAddress: order.shippingInfo,
-            trackingNumber: order.trackingNumber,
-            carrier: order.carrier,
-            status: args.status,
-            orderDate: new Date(order.createdAt).toLocaleDateString(),
-          };
-
-          // Send email notification
-          await ctx.scheduler.runAfter(0, api.emailActions.sendOrderStatusEmail, {
-            emailData,
-            newStatus: args.status,
-          });
-        }
-      } catch (error) {
-        console.error("Failed to send email notification:", error);
-        // Don't fail the status update if email fails
-      }
-    }
+    // (Removed email notification for order status updates)
 
     return { success: true };
   },

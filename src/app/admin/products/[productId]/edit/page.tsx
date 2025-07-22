@@ -42,6 +42,7 @@ export default function EditProductPage() {
   
   const product = useQuery(api.products.getProductById, { id: productId as any });
   const updateProduct = useMutation(api.products.updateProduct);
+  const categories = useQuery(api.categories.getCategories, {});
   
   const [formData, setFormData] = useState({
     name: "",
@@ -147,18 +148,6 @@ export default function EditProductPage() {
       setIsSubmitting(false);
     }
   };
-
-  const predefinedCategories = [
-    "Necklaces",
-    "Bracelets", 
-    "Earrings",
-    "Rings",
-    "Anklets",
-    "Hair Accessories",
-    "Keychains",
-    "Wall Art",
-    "Other"
-  ];
 
   if (isLoading) {
     return (
@@ -374,11 +363,15 @@ export default function EditProductPage() {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {predefinedCategories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
+                    {categories?.length ? (
+                      categories.map(cat => (
+                        <SelectItem key={cat._id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="" disabled>No categories found</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </CardContent>

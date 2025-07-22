@@ -9,7 +9,9 @@ export default defineSchema({
     role: v.union(v.literal("admin"), v.literal("customer")),
     contact: v.optional(v.string()),
     createdAt: v.number(),
-  }).index("by_email", ["email"]),
+    resetToken: v.optional(v.string()),
+    resetTokenExpires: v.optional(v.number()),
+  }).index("by_email", ["email"]).index("by_resetToken", ["resetToken"]),
 
   products: defineTable({
     name: v.string(),
@@ -95,6 +97,7 @@ export default defineSchema({
     description: v.string(),
     imageUrl: v.optional(v.string()),
     createdAt: v.number(),
+    updatedAt: v.optional(v.number()),
   }),
 
   // CMS Tables

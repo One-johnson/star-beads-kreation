@@ -15,6 +15,7 @@ import type {
 } from "convex/server";
 import type * as auth from "../auth.js";
 import type * as authMutations from "../authMutations.js";
+import type * as authNode from "../authNode.js";
 import type * as authQueries from "../authQueries.js";
 import type * as categories from "../categories.js";
 import type * as cms from "../cms.js";
@@ -39,6 +40,7 @@ import type * as wishlist from "../wishlist.js";
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   authMutations: typeof authMutations;
+  authNode: typeof authNode;
   authQueries: typeof authQueries;
   categories: typeof categories;
   cms: typeof cms;

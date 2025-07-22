@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useMutation, useAction } from "convex/react";
+import { useMutation, useAction, useQuery } from "convex/react";
 import { api } from "@/../convex/_generated/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
@@ -41,6 +41,7 @@ export default function NewProductPage() {
   const getStorageUrl = useMutation(api.products.getStorageUrl);
   const adminStoreImageFromUrl = useAction(api.products.adminStoreImageFromUrl);
   const deleteById = useMutation(api.products.deleteById);
+  const categories = useQuery(api.categories.getCategories, {});
   
   const [formData, setFormData] = useState({
     name: "",
@@ -232,18 +233,6 @@ export default function NewProductPage() {
     };
     img.src = url;
   };
-
-  const predefinedCategories = [
-    "Necklaces",
-    "Bracelets", 
-    "Earrings",
-    "Rings",
-    "Anklets",
-    "Hair Accessories",
-    "Keychains",
-    "Wall Art",
-    "Other"
-  ];
 
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
@@ -476,11 +465,15 @@ export default function NewProductPage() {
                     <SelectValue placeholder="Select category" />
                   </SelectTrigger>
                   <SelectContent>
-                    {predefinedCategories.map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category}
-                      </SelectItem>
-                    ))}
+                    {categories?.length ? (
+                      categories.map(cat => (
+                        <SelectItem key={cat._id} value={cat.name}>
+                          {cat.name}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <SelectItem value="all" disabled>No categories found</SelectItem>
+                    )}
                   </SelectContent>
                 </Select>
               </CardContent>
