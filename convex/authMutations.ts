@@ -125,6 +125,21 @@ export const updateUserRole = mutation({
   },
 });
 
+// Update user reset token and expiry
+export const updateUserResetToken = mutation({
+  args: {
+    userId: v.id("users"),
+    resetToken: v.string(),
+    resetTokenExpires: v.number(),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, {
+      resetToken: args.resetToken,
+      resetTokenExpires: args.resetTokenExpires,
+    });
+  },
+});
+
 // Get cart for a user
 export const getCart = query({
   args: { userId: v.id("users") },
@@ -322,5 +337,20 @@ export const createOrder = mutation({
     }
 
     return orderId;
+  },
+}); 
+
+// Reset password using token
+export const resetPassword = mutation({
+  args: { token: v.string(), newPassword: v.string() },
+  handler: async (ctx, args) => {
+    const user = await ctx.db.query("users").withIndex("by_resetToken", q => q.eq("resetToken", args.token)).first();
+    if (!user || !user.resetTokenExpires || user.resetTokenExpires < Date.now()) {
+      throw new Error("Invalid or expired reset token");
+    }
+    const bcrypt = await import("bcryptjs");
+    const passwordHash = await bcrypt.hash(args.newPassword, 10);
+    await ctx.db.patch(user._id, { passwordHash, resetToken: undefined, resetTokenExpires: undefined });
+    return { success: true };
   },
 }); 

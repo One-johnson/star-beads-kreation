@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, action } from "./_generated/server";
 
 // Get all categories
 export const getCategories = query({
@@ -32,15 +32,61 @@ export const getProductsByCategory = query({
 export const addCategory = mutation({
   args: {
     name: v.string(),
-    description: v.string(),
+    description: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    return await ctx.db.insert("categories", {
+    await ctx.db.insert("categories", {
       name: args.name,
-      description: args.description,
-      imageUrl: args.imageUrl,
+      description: args.description || "",
+      imageUrl: args.imageUrl || "",
       createdAt: Date.now(),
+      updatedAt: Date.now(),
     });
+  },
+});
+
+export const updateCategory = mutation({
+  args: {
+    categoryId: v.id("categories"),
+    name: v.string(),
+    description: v.optional(v.string()),
+    imageUrl: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.categoryId, {
+      name: args.name,
+      description: args.description || "",
+      imageUrl: args.imageUrl || "",
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const deleteCategory = mutation({
+  args: { categoryId: v.id("categories") },
+  handler: async (ctx, args) => {
+    await ctx.db.delete(args.categoryId);
+  },
+});
+
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getStorageUrl = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
+export const deleteById = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    await ctx.storage.delete(args.storageId);
   },
 }); 
