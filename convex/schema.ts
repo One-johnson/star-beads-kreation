@@ -11,7 +11,9 @@ export default defineSchema({
     createdAt: v.number(),
     resetToken: v.optional(v.string()),
     resetTokenExpires: v.optional(v.number()),
-  }).index("by_email", ["email"]).index("by_resetToken", ["resetToken"]),
+  })
+    .index("by_email", ["email"])
+    .index("by_resetToken", ["resetToken"]),
 
   products: defineTable({
     name: v.string(),
@@ -28,13 +30,15 @@ export default defineSchema({
 
   orders: defineTable({
     userId: v.id("users"),
-    items: v.array(v.object({
-      productId: v.string(),
-      name: v.string(),
-      price: v.number(),
-      quantity: v.number(),
-      imageUrl: v.string(),
-    })),
+    items: v.array(
+      v.object({
+        productId: v.string(),
+        name: v.string(),
+        price: v.number(),
+        quantity: v.number(),
+        imageUrl: v.string(),
+      })
+    ),
     total: v.number(),
     status: v.union(
       v.literal("pending"),
@@ -55,6 +59,10 @@ export default defineSchema({
     }),
     trackingNumber: v.optional(v.string()),
     carrier: v.optional(v.string()),
+    paymentStatus: v.optional(v.string()),
+    paymentMethod: v.optional(v.string()),
+    transactionId: v.optional(v.string()),
+    mobileNumber: v.optional(v.string()),
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
 
@@ -67,13 +75,15 @@ export default defineSchema({
 
   carts: defineTable({
     userId: v.id("users"),
-    items: v.array(v.object({
-      productId: v.string(),
-      name: v.string(),
-      price: v.number(),
-      quantity: v.number(),
-      imageUrl: v.string(),
-    })),
+    items: v.array(
+      v.object({
+        productId: v.string(),
+        name: v.string(),
+        price: v.number(),
+        quantity: v.number(),
+        imageUrl: v.string(),
+      })
+    ),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
 
@@ -84,13 +94,17 @@ export default defineSchema({
     rating: v.number(),
     comment: v.string(),
     createdAt: v.number(),
-  }).index("by_product", ["productId"]).index("by_user", ["userId"]),
+  })
+    .index("by_product", ["productId"])
+    .index("by_user", ["userId"]),
 
   wishlists: defineTable({
     userId: v.id("users"),
     productId: v.id("products"),
     createdAt: v.number(),
-  }).index("by_user", ["userId"]).index("by_product", ["productId"]),
+  })
+    .index("by_user", ["userId"])
+    .index("by_product", ["productId"]),
 
   categories: defineTable({
     name: v.string(),
@@ -108,18 +122,27 @@ export default defineSchema({
     excerpt: v.optional(v.string()),
     featuredImage: v.optional(v.string()),
     author: v.id("users"),
-    status: v.union(v.literal("draft"), v.literal("published"), v.literal("scheduled")),
+    status: v.union(
+      v.literal("draft"),
+      v.literal("published"),
+      v.literal("scheduled")
+    ),
     publishedAt: v.optional(v.number()),
     scheduledAt: v.optional(v.number()),
     tags: v.optional(v.array(v.string())),
-    type: v.optional(v.union(v.literal("blog"), v.literal("video"), v.literal("tutorial"))),
+    type: v.optional(
+      v.union(v.literal("blog"), v.literal("video"), v.literal("tutorial"))
+    ),
     videoUrl: v.optional(v.string()),
     seoTitle: v.optional(v.string()),
     seoDescription: v.optional(v.string()),
     seoKeywords: v.optional(v.array(v.string())),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_slug", ["slug"]).index("by_status", ["status"]).index("by_author", ["author"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_status", ["status"])
+    .index("by_author", ["author"]),
 
   pages: defineTable({
     title: v.string(),
@@ -139,7 +162,10 @@ export default defineSchema({
     seoKeywords: v.optional(v.array(v.string())),
     createdAt: v.number(),
     updatedAt: v.number(),
-  }).index("by_slug", ["slug"]).index("by_type", ["pageType"]).index("by_status", ["status"]),
+  })
+    .index("by_slug", ["slug"])
+    .index("by_type", ["pageType"])
+    .index("by_status", ["status"]),
 
   media: defineTable({
     filename: v.string(),
@@ -160,4 +186,4 @@ export default defineSchema({
     read: v.boolean(),
     createdAt: v.number(),
   }).index("by_user", ["userId"]),
-}); 
+});

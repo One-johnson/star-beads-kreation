@@ -126,7 +126,7 @@ export default function AdminCategoriesPage() {
     try {
       let url = imageUrl;
       if (imageFile) {
-        const { url: uploadedUrl, storageId: uploadedId } = await handleImageUpload(imageFile);
+        const { url: uploadedUrl } = await handleImageUpload(imageFile);
         url = uploadedUrl as string;
       }
       await addCategory({ name, description, imageUrl: url });

@@ -8,7 +8,7 @@ export const findUserByEmail = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("users")
-      .withIndex("by_email", q => q.eq("email", args.email))
+      .withIndex("by_email", (q) => q.eq("email", args.email))
       .first();
   },
 });
@@ -21,12 +21,12 @@ async function getAdminUserIds(ctx: any) {
 
 // Create user
 export const createUser = mutation({
-  args: { 
-    email: v.string(), 
-    name: v.string(), 
-    contact: v.string(), 
+  args: {
+    email: v.string(),
+    name: v.string(),
+    contact: v.string(),
     passwordHash: v.string(),
-    role: v.optional(v.union(v.literal("admin"), v.literal("customer")))
+    role: v.optional(v.union(v.literal("admin"), v.literal("customer"))),
   },
   handler: async (ctx, args) => {
     const userId = await ctx.db.insert("users", {
@@ -84,7 +84,7 @@ export const findSessionByToken = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("sessions")
-      .withIndex("by_token", q => q.eq("sessionToken", args.sessionToken))
+      .withIndex("by_token", (q) => q.eq("sessionToken", args.sessionToken))
       .first();
   },
 });
@@ -118,7 +118,10 @@ export const updateUserContact = mutation({
 
 // Promote or demote a user by updating their role
 export const updateUserRole = mutation({
-  args: { userId: v.id("users"), role: v.union(v.literal("admin"), v.literal("customer")) },
+  args: {
+    userId: v.id("users"),
+    role: v.union(v.literal("admin"), v.literal("customer")),
+  },
   handler: async (ctx, args) => {
     await ctx.db.patch(args.userId, { role: args.role });
     return { success: true };
@@ -146,7 +149,7 @@ export const getCart = query({
   handler: async (ctx, args) => {
     return await ctx.db
       .query("carts")
-      .withIndex("by_user", q => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
   },
 });
@@ -164,9 +167,9 @@ export const addToCart = mutation({
     }),
   },
   handler: async (ctx, args) => {
-    let cart = await ctx.db
+    const cart = await ctx.db
       .query("carts")
-      .withIndex("by_user", q => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
     if (!cart) {
       await ctx.db.insert("carts", {
@@ -177,7 +180,9 @@ export const addToCart = mutation({
       return;
     }
     // Check if product already in cart
-    const idx = cart.items.findIndex((item: any) => item.productId === args.product.productId);
+    const idx = cart.items.findIndex(
+      (item: any) => item.productId === args.product.productId
+    );
     let newItems;
     if (idx >= 0) {
       // Update quantity
@@ -198,13 +203,15 @@ export const updateCartItem = mutation({
     quantity: v.number(),
   },
   handler: async (ctx, args) => {
-    let cart = await ctx.db
+    const cart = await ctx.db
       .query("carts")
-      .withIndex("by_user", q => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
     if (!cart) return;
     const newItems = cart.items.map((item: any) =>
-      item.productId === args.productId ? { ...item, quantity: args.quantity } : item
+      item.productId === args.productId
+        ? { ...item, quantity: args.quantity }
+        : item
     );
     await ctx.db.patch(cart._id, { items: newItems, updatedAt: Date.now() });
   },
@@ -217,12 +224,14 @@ export const removeCartItem = mutation({
     productId: v.id("products"),
   },
   handler: async (ctx, args) => {
-    let cart = await ctx.db
+    const cart = await ctx.db
       .query("carts")
-      .withIndex("by_user", q => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
     if (!cart) return;
-    const newItems = cart.items.filter((item: any) => item.productId !== args.productId);
+    const newItems = cart.items.filter(
+      (item: any) => item.productId !== args.productId
+    );
     await ctx.db.patch(cart._id, { items: newItems, updatedAt: Date.now() });
   },
 });
@@ -231,9 +240,9 @@ export const removeCartItem = mutation({
 export const clearCart = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    let cart = await ctx.db
+    const cart = await ctx.db
       .query("carts")
-      .withIndex("by_user", q => q.eq("userId", args.userId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
     if (!cart) return;
     await ctx.db.patch(cart._id, { items: [], updatedAt: Date.now() });
@@ -244,13 +253,15 @@ export const clearCart = mutation({
 export const createOrder = mutation({
   args: {
     userId: v.id("users"),
-    items: v.array(v.object({
-      productId: v.id("products"),
-      name: v.string(),
-      price: v.number(),
-      quantity: v.number(),
-      imageUrl: v.string(),
-    })),
+    items: v.array(
+      v.object({
+        productId: v.id("products"),
+        name: v.string(),
+        price: v.number(),
+        quantity: v.number(),
+        imageUrl: v.string(),
+      })
+    ),
     total: v.number(),
     shippingInfo: v.object({
       fullName: v.string(),
@@ -262,6 +273,10 @@ export const createOrder = mutation({
       zipCode: v.string(),
       country: v.string(),
     }),
+    paymentStatus: v.optional(v.string()), // new
+    paymentMethod: v.optional(v.string()), // new
+    transactionId: v.optional(v.string()), // new
+    mobileNumber: v.optional(v.string()), // new
   },
   handler: async (ctx, args) => {
     const orderId = await ctx.db.insert("orders", {
@@ -270,6 +285,10 @@ export const createOrder = mutation({
       total: args.total,
       status: "pending",
       shippingInfo: args.shippingInfo,
+      paymentStatus: args.paymentStatus || "paid", // new
+      paymentMethod: args.paymentMethod || "mobile_money", // new
+      transactionId: args.transactionId ?? undefined, // new
+      mobileNumber: args.mobileNumber ?? undefined, // new
       createdAt: Date.now(),
     });
 
@@ -301,7 +320,7 @@ export const createOrder = mutation({
     try {
       console.log("Starting email process for order:", orderId);
       console.log("Customer email:", args.shippingInfo.email);
-      
+
       const emailData = {
         orderId: orderId,
         customerName: args.shippingInfo.fullName,
@@ -317,6 +336,9 @@ export const createOrder = mutation({
         },
         status: "pending",
         orderDate: new Date().toLocaleDateString(),
+        paymentMethod: args.paymentMethod || "mobile_money", // new
+        transactionId: args.transactionId || null, // new
+        mobileNumber: args.mobileNumber || null, // new
       };
 
       console.log("Email data prepared:", emailData);
@@ -329,7 +351,7 @@ export const createOrder = mutation({
           emailData,
         }
       );
-      
+
       console.log("Email scheduled successfully for order:", orderId);
     } catch (error) {
       console.error("Failed to send order confirmation email:", error);
@@ -338,19 +360,30 @@ export const createOrder = mutation({
 
     return orderId;
   },
-}); 
+});
 
 // Reset password using token
 export const resetPassword = mutation({
   args: { token: v.string(), newPassword: v.string() },
   handler: async (ctx, args) => {
-    const user = await ctx.db.query("users").withIndex("by_resetToken", q => q.eq("resetToken", args.token)).first();
-    if (!user || !user.resetTokenExpires || user.resetTokenExpires < Date.now()) {
+    const user = await ctx.db
+      .query("users")
+      .withIndex("by_resetToken", (q) => q.eq("resetToken", args.token))
+      .first();
+    if (
+      !user ||
+      !user.resetTokenExpires ||
+      user.resetTokenExpires < Date.now()
+    ) {
       throw new Error("Invalid or expired reset token");
     }
     const bcrypt = await import("bcryptjs");
     const passwordHash = await bcrypt.hash(args.newPassword, 10);
-    await ctx.db.patch(user._id, { passwordHash, resetToken: undefined, resetTokenExpires: undefined });
+    await ctx.db.patch(user._id, {
+      passwordHash,
+      resetToken: undefined,
+      resetTokenExpires: undefined,
+    });
     return { success: true };
   },
-}); 
+});
