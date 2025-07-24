@@ -8,7 +8,7 @@ export const getOrderById = query({
   handler: async (ctx, args) => {
     const order = await ctx.db.get(args.orderId);
     if (!order) return null;
-    
+
     const user = await ctx.db.get(order.userId);
     return {
       ...order,
@@ -22,7 +22,7 @@ export const getAllOrdersWithUsers = query({
   args: {},
   handler: async (ctx) => {
     const orders = await ctx.db.query("orders").order("desc").collect();
-    
+
     // Get user details for each order
     const ordersWithUsers = await Promise.all(
       orders.map(async (order) => {
@@ -33,7 +33,7 @@ export const getAllOrdersWithUsers = query({
         };
       })
     );
-    
+
     return ordersWithUsers;
   },
 });
@@ -43,8 +43,10 @@ export const getOrdersByStatus = query({
   args: { status: v.string() },
   handler: async (ctx, args) => {
     const orders = await ctx.db.query("orders").collect();
-    const filteredOrders = orders.filter(order => order.status === args.status);
-    
+    const filteredOrders = orders.filter(
+      (order) => order.status === args.status
+    );
+
     // Get user details for each order
     const ordersWithUsers = await Promise.all(
       filteredOrders.map(async (order) => {
@@ -55,7 +57,7 @@ export const getOrdersByStatus = query({
         };
       })
     );
-    
+
     return ordersWithUsers;
   },
 });
@@ -72,41 +74,44 @@ export const searchOrders = query({
   },
   handler: async (ctx, args) => {
     let orders = await ctx.db.query("orders").collect();
-    
+
     // Filter by search query
     if (args.query) {
       const query = args.query.toLowerCase();
-      orders = orders.filter(order => 
-        order.shippingInfo.fullName.toLowerCase().includes(query) ||
-        order.shippingInfo.email.toLowerCase().includes(query) ||
-        order.items.some((item: any) => item.name.toLowerCase().includes(query))
+      orders = orders.filter(
+        (order) =>
+          order.shippingInfo.fullName.toLowerCase().includes(query) ||
+          order.shippingInfo.email.toLowerCase().includes(query) ||
+          order.items.some((item: any) =>
+            item.name.toLowerCase().includes(query)
+          )
       );
     }
-    
+
     // Filter by status
     if (args.status) {
-      orders = orders.filter(order => order.status === args.status);
+      orders = orders.filter((order) => order.status === args.status);
     }
-    
+
     // Filter by date range
     if (args.startDate) {
-      orders = orders.filter(order => order.createdAt >= args.startDate!);
+      orders = orders.filter((order) => order.createdAt >= args.startDate!);
     }
     if (args.endDate) {
-      orders = orders.filter(order => order.createdAt <= args.endDate!);
+      orders = orders.filter((order) => order.createdAt <= args.endDate!);
     }
-    
+
     // Filter by total amount
     if (args.minTotal) {
-      orders = orders.filter(order => order.total >= args.minTotal!);
+      orders = orders.filter((order) => order.total >= args.minTotal!);
     }
     if (args.maxTotal) {
-      orders = orders.filter(order => order.total <= args.maxTotal!);
+      orders = orders.filter((order) => order.total <= args.maxTotal!);
     }
-    
+
     // Sort by creation date (newest first)
     orders.sort((a, b) => b.createdAt - a.createdAt);
-    
+
     // Get user details for each order
     const ordersWithUsers = await Promise.all(
       orders.map(async (order) => {
@@ -117,7 +122,7 @@ export const searchOrders = query({
         };
       })
     );
-    
+
     return ordersWithUsers;
   },
 });
@@ -196,12 +201,21 @@ export const bulkUpdateOrderStatus = mutation({
     ),
   },
   handler: async (ctx, args) => {
-    const results = [];
-    for (const orderId of args.orderIds) {
+    // Defensive: filter out any undefined/null/empty values
+    const validOrderIds = args.orderIds.filter(
+      (orderId) => typeof orderId === "string" && !!orderId
+    );
+    const results: any[] = [];
+    const notFound: string[] = [];
+    for (const orderId of validOrderIds) {
       const result = await ctx.db.patch(orderId, { status: args.status });
+      if (result === undefined) {
+        notFound.push(orderId);
+        continue;
+      }
       results.push(result);
     }
-    return results;
+    return { updated: results, notFound };
   },
 });
 
@@ -213,7 +227,7 @@ export const addTrackingNumber = mutation({
     carrier: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.orderId, { 
+    await ctx.db.patch(args.orderId, {
       trackingNumber: args.trackingNumber,
       carrier: args.carrier,
     });
@@ -224,19 +238,21 @@ export const addTrackingNumber = mutation({
 // Get order statistics
 export const getOrderStats = query({
   args: {
-    period: v.optional(v.union(
-      v.literal("today"),
-      v.literal("week"),
-      v.literal("month"),
-      v.literal("year")
-    )),
+    period: v.optional(
+      v.union(
+        v.literal("today"),
+        v.literal("week"),
+        v.literal("month"),
+        v.literal("year")
+      )
+    ),
   },
   handler: async (ctx, args) => {
     const orders = await ctx.db.query("orders").collect();
-    
+
     let filteredOrders = orders;
     const now = Date.now();
-    
+
     if (args.period) {
       const periods = {
         today: 24 * 60 * 60 * 1000,
@@ -244,21 +260,27 @@ export const getOrderStats = query({
         month: 30 * 24 * 60 * 60 * 1000,
         year: 365 * 24 * 60 * 60 * 1000,
       };
-      
+
       const cutoff = now - periods[args.period];
-      filteredOrders = orders.filter(order => order.createdAt >= cutoff);
+      filteredOrders = orders.filter((order) => order.createdAt >= cutoff);
     }
-    
+
     const totalOrders = filteredOrders.length;
-    const totalRevenue = filteredOrders.reduce((sum, order) => sum + order.total, 0);
-    
-    const statusCounts = filteredOrders.reduce((acc, order) => {
-      acc[order.status] = (acc[order.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>);
-    
+    const totalRevenue = filteredOrders.reduce(
+      (sum, order) => sum + order.total,
+      0
+    );
+
+    const statusCounts = filteredOrders.reduce(
+      (acc, order) => {
+        acc[order.status] = (acc[order.status] || 0) + 1;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
+
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    
+
     return {
       totalOrders,
       totalRevenue,
@@ -274,7 +296,7 @@ export const getRecentOrders = query({
   handler: async (ctx, args) => {
     const limit = args.limit || 10;
     const orders = await ctx.db.query("orders").order("desc").take(limit);
-    
+
     // Get user details for each order
     const ordersWithUsers = await Promise.all(
       orders.map(async (order) => {
@@ -285,7 +307,34 @@ export const getRecentOrders = query({
         };
       })
     );
-    
+
     return ordersWithUsers;
   },
-}); 
+});
+
+// Delete order mutation
+export const deleteOrder = mutation({
+  args: { orderId: v.id("orders") },
+  handler: async (ctx, args) => {
+    // Get the order
+    const order = await ctx.db.get(args.orderId);
+    if (!order) {
+      throw new Error("Order not found");
+    }
+    // Delete the order
+    await ctx.db.delete(args.orderId);
+    // Optionally, delete related notifications, etc.
+    return { success: true };
+  },
+});
+
+// Bulk delete orders mutation
+export const bulkDeleteOrders = mutation({
+  args: { orderIds: v.array(v.id("orders")) },
+  handler: async (ctx, args) => {
+    for (const orderId of args.orderIds) {
+      await ctx.db.delete(orderId);
+    }
+    return { success: true };
+  },
+});
