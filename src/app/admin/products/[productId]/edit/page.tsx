@@ -58,6 +58,14 @@ export default function EditProductPage() {
   const [isLoading, setIsLoading] = useState(true);
 
   // Admin check
+  if (user === undefined) {
+    return (
+      <div className="max-w-6xl mx-auto p-8">
+        <div className="text-center text-muted-foreground">Loading...</div>
+      </div>
+    );
+  }
+
   if (!user || user.role !== "admin") {
     return (
       <div className="max-w-6xl mx-auto p-8">
@@ -370,7 +378,7 @@ export default function EditProductPage() {
                         </SelectItem>
                       ))
                     ) : (
-                      <SelectItem value="" disabled>No categories found</SelectItem>
+                      <SelectItem value="all" disabled>No categories found</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
