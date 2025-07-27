@@ -5,11 +5,34 @@ import { api } from "@/../convex/_generated/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 import { toast } from "sonner";
 import { Star } from "lucide-react";
 import Link from "next/link";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+
+
 import { ArrowLeft } from "lucide-react";
 
 export default function AdminReviewsPage() {
@@ -25,6 +48,8 @@ export default function AdminReviewsPage() {
   const [page, setPage] = useState(1);
   const pageSize = 10;
   const [modalReview, setModalReview] = useState<any>(null);
+  const [confirmDialogId, setConfirmDialogId] = useState<string | null>(null);
+
 
   if (!user || user.role !== "admin") {
     return (
@@ -60,16 +85,29 @@ export default function AdminReviewsPage() {
   );
 
   const filteredReviews = reviews
-    ? reviews.filter((review: any) =>
-        (productFilter === "" || review.productName.toLowerCase().includes(productFilter.toLowerCase()) || review.productId.includes(productFilter)) &&
-        (userFilter === "" || review.userName.toLowerCase().includes(userFilter.toLowerCase()) || (review.userEmail || "").toLowerCase().includes(userFilter.toLowerCase())) &&
-        (ratingFilter === 0 || review.rating === ratingFilter) &&
-        (startDate === "" || new Date(review.createdAt) >= new Date(startDate)) &&
-        (endDate === "" || new Date(review.createdAt) <= new Date(endDate))
+    ? reviews.filter(
+        (review: any) =>
+          (productFilter === "" ||
+            review.productName
+              .toLowerCase()
+              .includes(productFilter.toLowerCase()) ||
+            review.productId.includes(productFilter)) &&
+          (userFilter === "" ||
+            review.userName.toLowerCase().includes(userFilter.toLowerCase()) ||
+            (review.userEmail || "")
+              .toLowerCase()
+              .includes(userFilter.toLowerCase())) &&
+          (ratingFilter === 0 || review.rating === ratingFilter) &&
+          (startDate === "" ||
+            new Date(review.createdAt) >= new Date(startDate)) &&
+          (endDate === "" || new Date(review.createdAt) <= new Date(endDate))
       )
     : [];
   const totalPages = Math.ceil(filteredReviews.length / pageSize);
-  const paginatedReviews = filteredReviews.slice((page - 1) * pageSize, page * pageSize);
+  const paginatedReviews = filteredReviews.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
 
   return (
     <div className="max-w-6xl mx-auto p-8">
@@ -87,39 +125,45 @@ export default function AdminReviewsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-4 mb-4 items-end">
-            <input
-              type="text"
+            <Input
               placeholder="Filter by Product Name or ID"
               value={productFilter}
-              onChange={e => setProductFilter(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
+              onChange={(e) => setProductFilter(e.target.value)}
+              className="w-[250px]"
             />
-            <input
-              type="text"
+            <Input
               placeholder="Filter by User Name or Email"
               value={userFilter}
-              onChange={e => setUserFilter(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
+              onChange={(e) => setUserFilter(e.target.value)}
+              className="w-[250px]"
             />
-            <select
-              value={ratingFilter}
-              onChange={e => setRatingFilter(Number(e.target.value))}
-              className="border rounded px-2 py-1 text-sm"
+            <Select
+              value={String(ratingFilter)}
+              onValueChange={(v) => setRatingFilter(Number(v))}
             >
-              <option value={0}>All Ratings</option>
-              {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} Stars</option>)}
-            </select>
-            <input
+              <SelectTrigger className="w-[150px]">
+                <SelectValue placeholder="All Ratings" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="0">All Ratings</SelectItem>
+                {[5, 4, 3, 2, 1].map((r) => (
+                  <SelectItem key={r} value={String(r)}>
+                    {r} Stars
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Input
               type="date"
               value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
+              onChange={(e) => setStartDate(e.target.value)}
+              className="w-[160px]"
             />
-            <input
+            <Input
               type="date"
               value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="border rounded px-2 py-1 text-sm"
+              onChange={(e) => setEndDate(e.target.value)}
+              className="w-[160px]"
             />
           </div>
           {reviews === undefined ? (
@@ -129,60 +173,135 @@ export default function AdminReviewsPage() {
           ) : (
             <>
               <div className="overflow-x-auto">
-                <table className="min-w-full text-sm">
-                  <thead>
-                    <tr>
-                      <th className="text-left p-2">Product</th>
-                      <th className="text-left p-2">User</th>
-                      <th className="text-left p-2">Rating</th>
-                      <th className="text-left p-2">Comment</th>
-                      <th className="text-left p-2">Date</th>
-                      <th className="text-left p-2">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Product</TableHead>
+                      <TableHead>User</TableHead>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Comment</TableHead>
+                      <TableHead>Date</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {paginatedReviews.map((review: any) => (
-                      <tr key={review._id} className="border-b last:border-b-0 hover:bg-muted/50 cursor-pointer" onClick={() => setModalReview(review)}>
-                        <td className="p-2 font-mono">
-                          <Link href={`/admin/products/${review.productId}/edit`} className="underline hover:text-blue-600">
-                            {review.productName} <span className="text-xs text-muted-foreground">({review.productId.slice(0, 8)})</span>
+                      <TableRow
+                        key={review._id}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setModalReview(review)}
+                      >
+                        <TableCell className="font-mono">
+                          <Link
+                            href={`/admin/products/${review.productId}/edit`}
+                            className="underline hover:text-blue-600"
+                          >
+                            {review.productName}{" "}
+                            <span className="text-xs text-muted-foreground">
+                              ({review.productId.slice(0, 8)})
+                            </span>
                           </Link>
-                        </td>
-                        <td className="p-2">
-                          <a href={`mailto:${review.userEmail}`} className="underline hover:text-blue-600">
+                        </TableCell>
+                        <TableCell>
+                          <a
+                            href={`mailto:${review.userEmail}`}
+                            className="underline hover:text-blue-600"
+                          >
                             {review.userName}
                           </a>
-                        </td>
-                        <td className="p-2">{renderStars(review.rating)}</td>
-                        <td className="p-2 max-w-xs truncate" title={review.comment}>{review.comment}</td>
-                        <td className="p-2">{new Date(review.createdAt).toLocaleDateString()}</td>
-                        <td className="p-2" onClick={e => e.stopPropagation()}>
+                        </TableCell>
+                        <TableCell>{renderStars(review.rating)}</TableCell>
+                        <TableCell
+                          className="max-w-xs truncate"
+                          title={review.comment}
+                        >
+                          {review.comment}
+                        </TableCell>
+                        <TableCell>
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           <Button
                             size="sm"
                             variant="destructive"
-                            onClick={() => handleDelete(review._id)}
+                            onClick={() => setConfirmDialogId(review._id)}
                             disabled={deletingId === review._id}
                           >
-                            {deletingId === review._id ? "Deleting..." : "Delete"}
+                            {deletingId === review._id
+                              ? "Deleting..."
+                              : "Delete"}
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
-              {/* Pagination Controls */}
+
+              <Dialog
+                open={!!confirmDialogId}
+                onOpenChange={() => setConfirmDialogId(null)}
+              >
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Confirm Deletion</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4">
+                    <p>
+                      Are you sure you want to delete this review? This action
+                      cannot be undone.
+                    </p>
+                    <div className="flex justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => setConfirmDialogId(null)}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (confirmDialogId) {
+                            handleDelete(confirmDialogId);
+                            setConfirmDialogId(null);
+                          }
+                        }}
+                      >
+                        Confirm Delete
+                      </Button>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
+
               <div className="flex justify-between items-center mt-4">
                 <span className="text-sm text-muted-foreground">
                   Page {page} of {totalPages}
                 </span>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="outline" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-                  <Button size="sm" variant="outline" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Next</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    Next
+                  </Button>
                 </div>
               </div>
-              {/* Review Details Modal */}
-              <Dialog open={!!modalReview} onOpenChange={open => !open && setModalReview(null)}>
+
+              <Dialog
+                open={!!modalReview}
+                onOpenChange={(open) => !open && setModalReview(null)}
+              >
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Review Details</DialogTitle>
@@ -191,17 +310,27 @@ export default function AdminReviewsPage() {
                     <div className="space-y-4">
                       <div>
                         <span className="font-semibold">Product: </span>
-                        <Link href={`/admin/products/${modalReview.productId}/edit`} className="underline hover:text-blue-600">
+                        <Link
+                          href={`/admin/products/${modalReview.productId}/edit`}
+                          className="underline hover:text-blue-600"
+                        >
                           {modalReview.productName}
                         </Link>
-                        <span className="ml-2 text-xs text-muted-foreground">({modalReview.productId})</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({modalReview.productId})
+                        </span>
                       </div>
                       <div>
                         <span className="font-semibold">User: </span>
-                        <a href={`mailto:${modalReview.userEmail}`} className="underline hover:text-blue-600">
+                        <a
+                          href={`mailto:${modalReview.userEmail}`}
+                          className="underline hover:text-blue-600"
+                        >
                           {modalReview.userName}
                         </a>
-                        <span className="ml-2 text-xs text-muted-foreground">({modalReview.userEmail})</span>
+                        <span className="ml-2 text-xs text-muted-foreground">
+                          ({modalReview.userEmail})
+                        </span>
                       </div>
                       <div>
                         <span className="font-semibold">Rating: </span>
@@ -227,4 +356,4 @@ export default function AdminReviewsPage() {
       </Card>
     </div>
   );
-} 
+}

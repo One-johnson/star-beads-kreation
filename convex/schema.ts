@@ -11,6 +11,7 @@ export default defineSchema({
     createdAt: v.number(),
     resetToken: v.optional(v.string()),
     resetTokenExpires: v.optional(v.number()),
+    
   })
     .index("by_email", ["email"])
     .index("by_resetToken", ["resetToken"]),

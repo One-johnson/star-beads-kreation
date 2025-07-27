@@ -54,6 +54,8 @@ export default function CustomerDetailsPage() {
   const router = useRouter();
   const customerId = params.customerId as string;
   
+
+  
   const customer = useQuery(api.customers.getCustomerById, { customerId: customerId as any });
   const customerOrders = useQuery(api.customers.getCustomerOrderHistory, { customerId: customerId as any });
   const updateCustomer = useMutation(api.customers.updateCustomer);
