@@ -172,7 +172,6 @@ export default function AdminCategoriesPage() {
     setEditPending(true);
     try {
       let url = editImageUrl;
-      let sid = editStorageId;
       if (editImageFile) {
         const { url: uploadedUrl } = await handleEditImageUpload(editImageFile);
         url = uploadedUrl ?? "";
