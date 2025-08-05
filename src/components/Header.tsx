@@ -136,14 +136,14 @@ export function Header() {
             <SheetContent side="left" className="pt-12 w-64">
               <SheetTitle className="sr-only">Main Navigation</SheetTitle>
               <nav className="flex flex-col gap-6">
-                <Link href="/" className={pathname === "/" ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Home</Link>
-                <Link href="/products" className={pathname.startsWith("/products") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Products</Link>
-                <Link href="/categories" className={pathname.startsWith("/categories") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Categories</Link>
-                <Link href="/gallery" className={pathname.startsWith("/gallery") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Gallery</Link>
-                <Link href="/blog" className={pathname.startsWith("/blog") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>Blog</Link>
-                <Link href="/about" className={pathname.startsWith("/about") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium"}>About</Link>
+                <Link href="/" className={pathname === "/" ? "text-lg  font-bold text-primary" : "text-lg font-medium"}>Home</Link>
+                <Link href="/products" className={pathname.startsWith("/products") ? "text-lg font-bold text-primary" : "text-lg font-medium"}>Products</Link>
+                <Link href="/categories" className={pathname.startsWith("/categories") ? "text-lg font-bold text-primary" : "text-lg font-medium"}>Categories</Link>
+                <Link href="/gallery" className={pathname.startsWith("/gallery") ? "text-lg font-bold text-primary" : "text-lg font-medium"}>Gallery</Link>
+                <Link href="/blog" className={pathname.startsWith("/blog") ? "text-lg font-bold text-primary" : "text-lg font-medium"}>Blog</Link>
+                <Link href="/about" className={pathname.startsWith("/about") ? "text-lg font-bold text-primary" : "text-lg font-medium"}>About</Link>
                 {user?.role === "admin" && (
-                  <Link href="/admin" className={pathname.startsWith("/admin") ? "text-lg font-medium font-bold text-primary" : "text-lg font-medium text-primary"}>Admin</Link>
+                  <Link href="/admin" className={pathname.startsWith("/admin") ? "text-lg font-bold text-primary" : "text-lg font-medium text-primary"}>Admin</Link>
                 )}
                 <div className="border-t my-2" />
                 {user ? (
