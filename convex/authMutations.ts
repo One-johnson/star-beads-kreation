@@ -1,8 +1,10 @@
+import { ConvexError, v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { v } from "convex/values";
+import { Id } from "./_generated/dataModel";
+import bcrypt from "bcryptjs";
 import { api } from "./_generated/api";
 
-// Find user by email
+// User queries
 export const findUserByEmail = query({
   args: { email: v.string() },
   handler: async (ctx, args) => {
@@ -13,60 +15,56 @@ export const findUserByEmail = query({
   },
 });
 
-// Helper to get all admin user IDs
-async function getAdminUserIds(ctx: any) {
-  const admins = await ctx.db.query("users").collect();
-  return admins.filter((u: any) => u.role === "admin").map((u: any) => u._id);
-}
+export const findSessionByToken = query({
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("sessionToken", args.sessionToken))
+      .first();
+  },
+});
 
-// Create user
+// User mutations
 export const createUser = mutation({
   args: {
     email: v.string(),
     name: v.string(),
-    contact: v.string(),
-    passwordHash: v.string(),
-    role: v.optional(v.union(v.literal("admin"), v.literal("customer"))),
+    password: v.string(),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("teacher"),
+      v.literal("student"),
+      v.literal("parent")
+    ),
+    contact: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    const existingUser = await ctx.db
+      .query("users")
+      .withIndex("by_email", (q) => q.eq("email", args.email))
+      .first();
+
+    if (existingUser) {
+      throw new ConvexError("Email already registered");
+    }
+
+    const passwordHash = await bcrypt.hash(args.password, 10);
+
     const userId = await ctx.db.insert("users", {
-      name: args.name,
       email: args.email,
-      passwordHash: args.passwordHash,
-      role: args.role || "customer",
+      name: args.name,
+      passwordHash,
+      role: args.role,
       contact: args.contact,
       createdAt: Date.now(),
-    });
-
-    // Notify all admins of new signup
-    const adminIds = await getAdminUserIds(ctx);
-    for (const adminId of adminIds) {
-      await ctx.db.insert("notifications", {
-        userId: adminId,
-        type: "signup",
-        title: "New User Signup",
-        message: `${args.name} (${args.email}) just signed up!`,
-        link: undefined,
-        read: false,
-        createdAt: Date.now(),
-      });
-    }
-    // (Optional) Welcome notification for the new user
-    await ctx.db.insert("notifications", {
-      userId,
-      type: "welcome",
-      title: "Welcome to Star Beads Kreation!",
-      message: `Hi ${args.name}, thanks for signing up!`,
-      link: undefined,
-      read: false,
-      createdAt: Date.now(),
+      isActive: true,
     });
 
     return userId;
   },
 });
 
-// Create session
 export const createSession = mutation({
   args: { userId: v.id("users"), sessionToken: v.string() },
   handler: async (ctx, args) => {
@@ -78,312 +76,332 @@ export const createSession = mutation({
   },
 });
 
-// Find session by token
-export const findSessionByToken = query({
-  args: { sessionToken: v.string() },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query("sessions")
-      .withIndex("by_token", (q) => q.eq("sessionToken", args.sessionToken))
-      .first();
-  },
-});
-
-// Delete session by id
 export const deleteSession = mutation({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, args) => {
     await ctx.db.delete(args.sessionId);
-    return { success: true };
   },
 });
 
-// Update user name
-export const updateUserName = mutation({
-  args: { userId: v.id("users"), name: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, { name: args.name });
-    return { success: true };
-  },
-});
-
-// Update user contact
-export const updateUserContact = mutation({
-  args: { userId: v.id("users"), contact: v.string() },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, { contact: args.contact });
-    return { success: true };
-  },
-});
-
-// Promote or demote a user by updating their role
-export const updateUserRole = mutation({
+// Student management
+export const createStudent = mutation({
   args: {
     userId: v.id("users"),
-    role: v.union(v.literal("admin"), v.literal("customer")),
+    studentId: v.string(),
+    firstName: v.string(),
+    lastName: v.string(),
+    dateOfBirth: v.string(),
+    gender: v.union(v.literal("male"), v.literal("female"), v.literal("other")),
+    address: v.string(),
+    phone: v.string(),
+    emergencyContact: v.object({
+      name: v.string(),
+      relationship: v.string(),
+      phone: v.string(),
+    }),
+    grade: v.string(),
+    section: v.string(),
+    parentId: v.optional(v.id("users")),
+    medicalInfo: v.optional(v.string()),
+    academicYear: v.string(),
   },
   handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, { role: args.role });
-    return { success: true };
-  },
-});
+    const existingStudent = await ctx.db
+      .query("students")
+      .withIndex("by_studentId", (q) => q.eq("studentId", args.studentId))
+      .first();
 
-// Update user reset token and expiry
-export const updateUserResetToken = mutation({
-  args: {
-    userId: v.id("users"),
-    resetToken: v.string(),
-    resetTokenExpires: v.number(),
-  },
-  handler: async (ctx, args) => {
-    await ctx.db.patch(args.userId, {
-      resetToken: args.resetToken,
-      resetTokenExpires: args.resetTokenExpires,
+    if (existingStudent) {
+      throw new ConvexError("Student ID already exists");
+    }
+
+    return await ctx.db.insert("students", {
+      userId: args.userId,
+      studentId: args.studentId,
+      firstName: args.firstName,
+      lastName: args.lastName,
+      dateOfBirth: args.dateOfBirth,
+      gender: args.gender,
+      address: args.address,
+      phone: args.phone,
+      emergencyContact: args.emergencyContact,
+      enrollmentDate: Date.now(),
+      grade: args.grade,
+      section: args.section,
+      parentId: args.parentId,
+      medicalInfo: args.medicalInfo,
+      academicYear: args.academicYear,
+      isActive: true,
     });
   },
 });
 
-// Get cart for a user
-export const getCart = query({
+export const updateStudent = mutation({
+  args: {
+    studentId: v.id("students"),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    address: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    emergencyContact: v.optional(v.object({
+      name: v.string(),
+      relationship: v.string(),
+      phone: v.string(),
+    })),
+    grade: v.optional(v.string()),
+    section: v.optional(v.string()),
+    medicalInfo: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const { studentId, ...updates } = args;
+    await ctx.db.patch(studentId, updates);
+  },
+});
+
+export const getStudentByUserId = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     return await ctx.db
-      .query("carts")
+      .query("students")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
   },
 });
 
-// Add item to cart (or update quantity if exists)
-export const addToCart = mutation({
+// Teacher management
+export const createTeacher = mutation({
   args: {
     userId: v.id("users"),
-    product: v.object({
-      productId: v.id("products"),
-      name: v.string(),
-      price: v.number(),
-      quantity: v.number(),
-      imageUrl: v.string(),
-    }),
+    teacherId: v.string(),
+    firstName: v.string(),
+    lastName: v.string(),
+    dateOfBirth: v.string(),
+    gender: v.union(v.literal("male"), v.literal("female"), v.literal("other")),
+    address: v.string(),
+    phone: v.string(),
+    qualification: v.string(),
+    specialization: v.array(v.string()),
+    salary: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const cart = await ctx.db
-      .query("carts")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
+    const existingTeacher = await ctx.db
+      .query("teachers")
+      .withIndex("by_teacherId", (q) => q.eq("teacherId", args.teacherId))
       .first();
-    if (!cart) {
-      await ctx.db.insert("carts", {
-        userId: args.userId,
-        items: [args.product],
-        updatedAt: Date.now(),
-      });
-      return;
+
+    if (existingTeacher) {
+      throw new ConvexError("Teacher ID already exists");
     }
-    // Check if product already in cart
-    const idx = cart.items.findIndex(
-      (item: any) => item.productId === args.product.productId
-    );
-    let newItems;
-    if (idx >= 0) {
-      // Update quantity
-      newItems = [...cart.items];
-      newItems[idx].quantity += args.product.quantity;
-    } else {
-      newItems = [...cart.items, args.product];
-    }
-    await ctx.db.patch(cart._id, { items: newItems, updatedAt: Date.now() });
+
+    return await ctx.db.insert("teachers", {
+      userId: args.userId,
+      teacherId: args.teacherId,
+      firstName: args.firstName,
+      lastName: args.lastName,
+      dateOfBirth: args.dateOfBirth,
+      gender: args.gender,
+      address: args.address,
+      phone: args.phone,
+      qualification: args.qualification,
+      specialization: args.specialization,
+      hireDate: Date.now(),
+      salary: args.salary,
+      isActive: true,
+    });
   },
 });
 
-// Update cart item quantity
-export const updateCartItem = mutation({
+export const updateTeacher = mutation({
   args: {
-    userId: v.id("users"),
-    productId: v.id("products"),
-    quantity: v.number(),
+    teacherId: v.id("teachers"),
+    firstName: v.optional(v.string()),
+    lastName: v.optional(v.string()),
+    address: v.optional(v.string()),
+    phone: v.optional(v.string()),
+    qualification: v.optional(v.string()),
+    specialization: v.optional(v.array(v.string())),
+    salary: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const cart = await ctx.db
-      .query("carts")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .first();
-    if (!cart) return;
-    const newItems = cart.items.map((item: any) =>
-      item.productId === args.productId
-        ? { ...item, quantity: args.quantity }
-        : item
-    );
-    await ctx.db.patch(cart._id, { items: newItems, updatedAt: Date.now() });
+    const { teacherId, ...updates } = args;
+    await ctx.db.patch(teacherId, updates);
   },
 });
 
-// Remove item from cart
-export const removeCartItem = mutation({
-  args: {
-    userId: v.id("users"),
-    productId: v.id("products"),
-  },
-  handler: async (ctx, args) => {
-    const cart = await ctx.db
-      .query("carts")
-      .withIndex("by_user", (q) => q.eq("userId", args.userId))
-      .first();
-    if (!cart) return;
-    const newItems = cart.items.filter(
-      (item: any) => item.productId !== args.productId
-    );
-    await ctx.db.patch(cart._id, { items: newItems, updatedAt: Date.now() });
-  },
-});
-
-// Clear cart
-export const clearCart = mutation({
+export const getTeacherByUserId = query({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
-    const cart = await ctx.db
-      .query("carts")
+    return await ctx.db
+      .query("teachers")
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
-    if (!cart) return;
-    await ctx.db.patch(cart._id, { items: [], updatedAt: Date.now() });
   },
 });
 
-// Create order
-export const createOrder = mutation({
+// Class management
+export const createClass = mutation({
   args: {
-    userId: v.id("users"),
-    items: v.array(
-      v.object({
-        productId: v.id("products"),
-        name: v.string(),
-        price: v.number(),
-        quantity: v.number(),
-        imageUrl: v.string(),
-      })
-    ),
-    total: v.number(),
-    shippingInfo: v.object({
-      fullName: v.string(),
-      email: v.string(),
-      phone: v.string(),
-      address: v.string(),
-      city: v.string(),
-      state: v.string(),
-      zipCode: v.string(),
-      country: v.string(),
-    }),
-    paymentStatus: v.optional(v.string()), // new
-    paymentMethod: v.optional(v.string()), // new
-    transactionId: v.optional(v.string()), // new
-    mobileNumber: v.optional(v.string()), // new
+    name: v.string(),
+    grade: v.string(),
+    section: v.string(),
+    academicYear: v.string(),
+    classTeacherId: v.optional(v.id("teachers")),
+    capacity: v.number(),
   },
   handler: async (ctx, args) => {
-    const orderId = await ctx.db.insert("orders", {
-      userId: args.userId,
-      items: args.items,
-      total: args.total,
-      status: "pending",
-      shippingInfo: args.shippingInfo,
-      paymentStatus: args.paymentStatus || "paid", // new
-      paymentMethod: args.paymentMethod || "mobile_money", // new
-      transactionId: args.transactionId ?? undefined, // new
-      mobileNumber: args.mobileNumber ?? undefined, // new
-      createdAt: Date.now(),
-    });
+    const existingClass = await ctx.db
+      .query("classes")
+      .withIndex("by_grade_section", (q) => 
+        q.eq("grade", args.grade).eq("section", args.section)
+      )
+      .first();
 
-    // Notify all admins of new order
-    const adminIds = await getAdminUserIds(ctx);
-    for (const adminId of adminIds) {
-      await ctx.db.insert("notifications", {
-        userId: adminId,
-        type: "order",
-        title: "New Order Placed",
-        message: `Order placed by ${args.shippingInfo.fullName}`,
-        link: `/admin/orders/${orderId}`,
-        read: false,
-        createdAt: Date.now(),
-      });
-    }
-    // Notify customer
-    await ctx.db.insert("notifications", {
-      userId: args.userId,
-      type: "order",
-      title: "Order Placed Successfully!",
-      message: `Your order has been placed. We'll keep you updated!`,
-      link: `/orders/${orderId}`,
-      read: false,
-      createdAt: Date.now(),
-    });
-
-    // Send order confirmation email
-    try {
-      console.log("Starting email process for order:", orderId);
-      console.log("Customer email:", args.shippingInfo.email);
-
-      const emailData = {
-        orderId: orderId,
-        customerName: args.shippingInfo.fullName,
-        customerEmail: args.shippingInfo.email,
-        orderTotal: args.total,
-        orderItems: args.items,
-        shippingAddress: {
-          fullName: args.shippingInfo.fullName,
-          address: args.shippingInfo.address,
-          city: args.shippingInfo.city,
-          state: args.shippingInfo.state,
-          zipCode: args.shippingInfo.zipCode,
-        },
-        status: "pending",
-        orderDate: new Date().toLocaleDateString(),
-        paymentMethod: args.paymentMethod || "mobile_money", // new
-        transactionId: args.transactionId || null, // new
-        mobileNumber: args.mobileNumber || null, // new
-      };
-
-      console.log("Email data prepared:", emailData);
-
-      // Send email notification
-      await ctx.scheduler.runAfter(
-        0,
-        api.emailActions.sendOrderConfirmationEmail,
-        {
-          emailData,
-        }
-      );
-
-      console.log("Email scheduled successfully for order:", orderId);
-    } catch (error) {
-      console.error("Failed to send order confirmation email:", error);
-      // Don't fail the order creation if email fails
+    if (existingClass) {
+      throw new ConvexError("Class already exists for this grade and section");
     }
 
-    return orderId;
+    return await ctx.db.insert("classes", {
+      name: args.name,
+      grade: args.grade,
+      section: args.section,
+      academicYear: args.academicYear,
+      classTeacherId: args.classTeacherId,
+      capacity: args.capacity,
+      currentEnrollment: 0,
+      isActive: true,
+      createdAt: Date.now(),
+    });
   },
 });
 
-// Reset password using token
-export const resetPassword = mutation({
-  args: { token: v.string(), newPassword: v.string() },
+export const getClasses = query({
+  args: { academicYear: v.string() },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .withIndex("by_resetToken", (q) => q.eq("resetToken", args.token))
+    return await ctx.db
+      .query("classes")
+      .withIndex("by_academic_year", (q) => q.eq("academicYear", args.academicYear))
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+  },
+});
+
+// Subject management
+export const createSubject = mutation({
+  args: {
+    name: v.string(),
+    code: v.string(),
+    description: v.string(),
+    grade: v.string(),
+    credits: v.number(),
+  },
+  handler: async (ctx, args) => {
+    const existingSubject = await ctx.db
+      .query("subjects")
+      .withIndex("by_code", (q) => q.eq("code", args.code))
       .first();
-    if (
-      !user ||
-      !user.resetTokenExpires ||
-      user.resetTokenExpires < Date.now()
-    ) {
-      throw new Error("Invalid or expired reset token");
+
+    if (existingSubject) {
+      throw new ConvexError("Subject code already exists");
     }
-    const bcrypt = await import("bcryptjs");
-    const passwordHash = await bcrypt.hash(args.newPassword, 10);
-    await ctx.db.patch(user._id, {
-      passwordHash,
-      resetToken: undefined,
-      resetTokenExpires: undefined,
+
+    return await ctx.db.insert("subjects", {
+      name: args.name,
+      code: args.code,
+      description: args.description,
+      grade: args.grade,
+      credits: args.credits,
+      isActive: true,
+      createdAt: Date.now(),
     });
-    return { success: true };
+  },
+});
+
+export const getSubjects = query({
+  args: { grade: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    if (args.grade) {
+      return await ctx.db
+        .query("subjects")
+        .withIndex("by_grade", (q) => q.eq("grade", args.grade))
+        .filter((q) => q.eq(q.field("isActive"), true))
+        .collect();
+    }
+    
+    return await ctx.db
+      .query("subjects")
+      .filter((q) => q.eq(q.field("isActive"), true))
+      .collect();
+  },
+});
+
+// Academic year management
+export const createAcademicYear = mutation({
+  args: {
+    name: v.string(),
+    startDate: v.number(),
+    endDate: v.number(),
+  },
+  handler: async (ctx, args) => {
+    // Deactivate all other academic years
+    const existingYears = await ctx.db.query("academicYears").collect();
+    for (const year of existingYears) {
+      await ctx.db.patch(year._id, { isActive: false });
+    }
+
+    return await ctx.db.insert("academicYears", {
+      name: args.name,
+      startDate: args.startDate,
+      endDate: args.endDate,
+      isActive: true,
+      createdAt: Date.now(),
+    });
+  },
+});
+
+export const getCurrentAcademicYear = query({
+  handler: async (ctx) => {
+    return await ctx.db
+      .query("academicYears")
+      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .first();
+  },
+});
+
+// School settings
+export const createSchoolSettings = mutation({
+  args: {
+    schoolName: v.string(),
+    address: v.string(),
+    phone: v.string(),
+    email: v.string(),
+    website: v.optional(v.string()),
+    academicYear: v.string(),
+    settings: v.object({
+      attendanceThreshold: v.optional(v.number()),
+      gradingScale: v.optional(v.object({
+        A: v.number(),
+        B: v.number(),
+        C: v.number(),
+        D: v.number(),
+        F: v.number(),
+      })),
+      feeDueReminderDays: v.optional(v.number()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    return await ctx.db.insert("schoolSettings", {
+      ...args,
+      updatedAt: Date.now(),
+    });
+  },
+});
+
+export const getSchoolSettings = query({
+  args: { academicYear: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("schoolSettings")
+      .withIndex("by_academic_year", (q) => q.eq("academicYear", args.academicYear))
+      .first();
   },
 });

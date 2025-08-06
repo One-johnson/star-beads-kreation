@@ -1,49 +1,90 @@
 "use node";
-import { action, ActionCtx } from "./_generated/server";
-import { v } from "convex/values";
-import bcrypt from "bcryptjs";
-import { randomBytes } from "crypto";
-import { api } from "./_generated/api";
+import { ConvexError, v } from "convex/values";
+import { mutation, query } from "./_generated/server";
+import { Id } from "./_generated/dataModel";
 
-export const signUp = action({
-  args: { email: v.string(), name: v.string(), contact: v.string(), password: v.string() },
-  handler: async (ctx: ActionCtx, args: { email: string; name: string; contact: string; password: string }): Promise<{ userId: string }> => {
-    const existing = await ctx.runQuery(api.authMutations.findUserByEmail, { email: args.email });
-    if (existing) throw new Error("Email already registered");
-    const passwordHash = await bcrypt.hash(args.password, 10);
-    const userId: string = await ctx.runMutation(api.authMutations.createUser, {
-      email: args.email,
-      name: args.name,
-      contact: args.contact,
-      passwordHash,
-    });
-    return { userId };
-  },
-});
+export const generateId = () => {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+};
 
-export const login = action({
-  args: { email: v.string(), password: v.string() },
-  handler: async (ctx: ActionCtx, args: { email: string; password: string }): Promise<{ sessionToken: string }> => {
-    const user = await ctx.runQuery(api.authMutations.findUserByEmail, { email: args.email });
-    if (!user) throw new Error("Invalid email or password");
-    const valid = await bcrypt.compare(args.password, user.passwordHash);
-    if (!valid) throw new Error("Invalid email or password");
-    const sessionToken = randomBytes(32).toString("hex");
-    await ctx.runMutation(api.authMutations.createSession, {
-      userId: user._id,
-      sessionToken,
-    });
-    return { sessionToken };
-  },
-});
-
-export const logout = action({
+export const getUser = query({
   args: { sessionToken: v.string() },
-  handler: async (ctx: ActionCtx, args: { sessionToken: string }): Promise<{ success: boolean }> => {
-    const session = await ctx.runQuery(api.authMutations.findSessionByToken, { sessionToken: args.sessionToken });
-    if (session) {
-      await ctx.runMutation(api.authMutations.deleteSession, { sessionId: session._id });
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("sessionToken", args.sessionToken))
+      .first();
+
+    if (!session) {
+      return null;
     }
-    return { success: true };
+
+    const user = await ctx.db.get(session.userId);
+    if (!user || !user.isActive) {
+      return null;
+    }
+
+    return {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      contact: user.contact,
+      avatar: user.avatar,
+    };
+  },
+});
+
+export const createSession = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    const sessionToken = generateId();
+    const sessionId = await ctx.db.insert("sessions", {
+      userId: args.userId,
+      sessionToken,
+      createdAt: Date.now(),
+    });
+    return sessionToken;
+  },
+});
+
+export const deleteSession = mutation({
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("by_token", (q) => q.eq("sessionToken", args.sessionToken))
+      .first();
+
+    if (session) {
+      await ctx.db.delete(session._id);
+    }
+  },
+});
+
+export const isAuthenticated = query({
+  args: { sessionToken: v.string() },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx, args);
+    return user !== null;
+  },
+});
+
+export const hasRole = query({
+  args: { 
+    sessionToken: v.string(),
+    roles: v.array(v.union(
+      v.literal("admin"),
+      v.literal("teacher"),
+      v.literal("student"),
+      v.literal("parent")
+    ))
+  },
+  handler: async (ctx, args) => {
+    const user = await getUser(ctx, args);
+    if (!user) {
+      return false;
+    }
+    return args.roles.includes(user.role);
   },
 }); 
