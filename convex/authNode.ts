@@ -1,45 +1,127 @@
 "use node";
-import { action } from "./_generated/server";
+import { action, ActionCtx } from "./_generated/server";
 import { v } from "convex/values";
-import crypto from "node:crypto";
+import bcrypt from "bcryptjs";
+import { randomBytes } from "crypto";
 import { api } from "./_generated/api";
 
-// Request password reset (Node.js runtime)
-export const requestPasswordReset = action({
-  args: { email: v.string() },
-  handler: async (ctx, args) => {
+export const signUp = action({
+  args: { 
+    email: v.string(), 
+    name: v.string(), 
+    password: v.string(),
+    role: v.union(
+      v.literal("admin"),
+      v.literal("teacher"),
+      v.literal("student"),
+      v.literal("parent")
+    ),
+    contact: v.optional(v.string()) 
+  },
+  handler: async (ctx: ActionCtx, args): Promise<{ userId: string }> => {
+    const existing = await ctx.runQuery(api.authMutations.findUserByEmail, { email: args.email });
+    if (existing) throw new Error("Email already registered");
+    
+    const userId: string = await ctx.runMutation(api.authMutations.createUser, {
+      email: args.email,
+      name: args.name,
+      password: args.password,
+      role: args.role,
+      contact: args.contact,
+    });
+    
+    return { userId };
+  },
+});
+
+export const login = action({
+  args: { email: v.string(), password: v.string() },
+  handler: async (ctx: ActionCtx, args): Promise<{ sessionToken: string; user: any }> => {
     const user = await ctx.runQuery(api.authMutations.findUserByEmail, { email: args.email });
-    if (!user) {
-      // Don't reveal if user exists
-      return { success: true };
+    if (!user || !user.isActive) throw new Error("Invalid email or password");
+    
+    const valid = await bcrypt.compare(args.password, user.passwordHash);
+    if (!valid) throw new Error("Invalid email or password");
+    
+    const sessionToken = randomBytes(32).toString("hex");
+    await ctx.runMutation(api.authMutations.createSession, {
+      userId: user._id,
+      sessionToken,
+    });
+    
+    return { 
+      sessionToken,
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        contact: user.contact,
+        avatar: user.avatar,
+      }
+    };
+  },
+});
+
+export const logout = action({
+  args: { sessionToken: v.string() },
+  handler: async (ctx: ActionCtx, args): Promise<{ success: boolean }> => {
+    const session = await ctx.runQuery(api.authMutations.findSessionByToken, { sessionToken: args.sessionToken });
+    if (session) {
+      await ctx.runMutation(api.authMutations.deleteSession, { sessionId: session._id });
     }
-    // Generate token
-    const token = crypto.randomBytes(32).toString("hex");
-    const expires = Date.now() + 1000 * 60 * 60; // 1 hour
+    return { success: true };
+  },
+});
+
+export const resetPassword = action({
+  args: { token: v.string(), newPassword: v.string() },
+  handler: async (ctx: ActionCtx, args): Promise<{ success: boolean }> => {
+    const user = await ctx.runQuery(api.authMutations.findUserByEmail, { email: args.email });
+    if (
+      !user ||
+      !user.resetTokenExpires ||
+      user.resetTokenExpires < Date.now()
+    ) {
+      throw new Error("Invalid or expired reset token");
+    }
+    
+    const passwordHash = await bcrypt.hash(args.newPassword, 10);
     await ctx.runMutation(api.authMutations.updateUserResetToken, {
       userId: user._id,
-      resetToken: token,
-      resetTokenExpires: expires,
+      passwordHash,
+      resetToken: undefined,
+      resetTokenExpires: undefined,
     });
-    const resetLink = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/auth/reset?token=${token}`;
-    // Send email with link
-    try {
-      const { Resend } = await import("resend");
-      const resend = new Resend(process.env.RESEND_API_KEY || process.env.NEXT_PUBLIC_RESEND_API_KEY);
-      await resend.emails.send({
-        from: "onboarding@resend.dev",
-        to: [user.email],
-        subject: "Password Reset Request",
-        html: `<p>Hello${user.name ? ` ${user.name}` : ""},</p>
-          <p>We received a request to reset your password. Click the link below to set a new password:</p>
-          <p><a href='${resetLink}'>Reset your password</a></p>
-          <p>If you did not request this, you can ignore this email.</p>
-          <p>This link will expire in 1 hour.</p>
-          <p>Thanks,<br/>Flow Stores Team</p>`
-      });
-    } catch (e) {
-      console.error("Failed to send password reset email", e);
+    
+    return { success: true };
+  },
+});
+
+export const forgotPassword = action({
+  args: { email: v.string() },
+  handler: async (ctx: ActionCtx, args): Promise<{ success: boolean }> => {
+    const user = await ctx.runQuery(api.authMutations.findUserByEmail, { email: args.email });
+    if (!user) {
+      // Don't reveal if email exists or not
+      return { success: true };
     }
+    
+    const resetToken = randomBytes(32).toString("hex");
+    const resetTokenExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+    
+    await ctx.runMutation(api.authMutations.updateUserResetToken, {
+      userId: user._id,
+      resetToken,
+      resetTokenExpires,
+    });
+    
+    // TODO: Send email with reset link
+    // await ctx.scheduler.runAfter(0, api.emailActions.sendPasswordResetEmail, {
+    //   email: args.email,
+    //   resetToken,
+    // });
+    
     return { success: true };
   },
 }); 
